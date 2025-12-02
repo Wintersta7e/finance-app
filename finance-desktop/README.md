@@ -1,73 +1,32 @@
-# React + TypeScript + Vite
+# Finance Desktop (Electron + Vite + React)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Electron shell around the finance backend UI. The app talks to the Spring Boot service at `http://127.0.0.1:8080` and renders React screens via Vite.
 
-Currently, two official plugins are available:
+## Prerequisites
+- Node 20+
+- Backend running locally (`mvn spring-boot:run` in `../finance-backend`)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Install & run
+- Install deps: `npm install`
+- Dev (Vite + Electron): `npm run dev:desktop` (starts Vite on `http://localhost:5173`, waits, then launches Electron)
+- Electron only against dev server: `npm run electron`
+- Production-like Electron (loads built `dist/`): `npm run electron:prod` (requires `npm run build` first)
+- Frontend-only:
+  - `npm run dev` – Vite dev server
+  - `npm run build` – Vite build
+  - `npm run preview` – serve built assets
 
-## React Compiler
+## API expectations
+- Backend base URL: `http://127.0.0.1:8080/api`
+- Current UI calls `/api/health`; upcoming work: Dashboard, Accounts, Transactions. Add CORS rules on the backend to allow `localhost:5173` and the Electron app.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Project structure
+- `electron/main.js` – Electron main process; loads Vite in dev or `dist/index.html` in prod.
+- `src/App.tsx` – React entry; currently renders backend health status.
+- `src/main.tsx` – Bootstraps React into the DOM.
+- `public/` – static assets bundled by Vite.
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## Scripts (package.json)
+- `dev:desktop` – concurrently run Vite and Electron dev shell (waits for dev server).
+- `electron` / `electron:prod` – launch Electron in dev/prod mode.
+- `lint` – ESLint over the project.

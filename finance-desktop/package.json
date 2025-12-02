@@ -53,16 +53,17 @@
         "filter": [
           "finance-backend-0.0.1-SNAPSHOT.jar"
         ]
+      },
+      {
+        "from": "jre",
+        "to": "jre"
       }
     ],
     "win": {
-      "target": "nsis"
-    },
-    "linux": {
-      "target": "AppImage"
-    },
-    "mac": {
-      "target": "dmg"
+      "target": [
+        "portable"
+      ],
+      "artifactName": "Finance Desktop-${version}-portable.${ext}"
     }
   }
 }

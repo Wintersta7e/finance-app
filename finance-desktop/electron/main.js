@@ -1,11 +1,28 @@
 const { app, BrowserWindow } = require('electron');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
-const os = require('node:os');
+const fs = require('node:fs');
 
 const isDev = !app.isPackaged;
 const DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173';
 const BACKEND_JAR = 'finance-backend-0.0.1-SNAPSHOT.jar';
+
+function getJavaCmd() {
+  if (isDev) {
+    return 'java';
+  }
+
+  const jreBase = path.join(process.resourcesPath, 'jre');
+  return path.join(jreBase, 'bin', 'java.exe');
+}
+
+function getPortableDataDir() {
+  const exeDir = process.env.PORTABLE_EXECUTABLE_DIR;
+  if (!exeDir) {
+    return null;
+  }
+  return path.join(exeDir, 'data');
+}
 
 function getBackendJarPath() {
   if (isDev) {
@@ -21,11 +38,24 @@ let backendProc = null;
 
 function startBackend() {
   const jarPath = getBackendJarPath();
-  const javaCmd = os.platform() === 'win32' ? 'java.exe' : 'java';
+  const javaCmd = getJavaCmd();
+
+  const env = { ...process.env };
+
+  if (!isDev) {
+    const dataDir = getPortableDataDir();
+    if (dataDir) {
+      // Ensure data directory exists for H2 file DB.
+      fs.mkdirSync(dataDir, { recursive: true });
+      const dbFilePath = path.join(dataDir, 'finance-db').replace(/\\/g, '/');
+      env.SPRING_DATASOURCE_URL = `jdbc:h2:file:${dbFilePath};AUTO_SERVER=TRUE`;
+    }
+  }
 
   console.log('Starting backend from', jarPath);
 
   backendProc = spawn(javaCmd, ['-jar', jarPath], {
+    env,
     stdio: 'ignore',
     windowsHide: true,
   });
@@ -77,7 +107,9 @@ app.whenReady().then(() => {
 });
 
 app.on('before-quit', () => {
-  stopBackend();
+  if (!isDev) {
+    stopBackend();
+  }
 });
 
 app.on('window-all-closed', () => {

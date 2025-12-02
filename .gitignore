@@ -1,0 +1,41 @@
+# Backend
+finance-backend/target/
+finance-backend/build/
+finance-backend/.mvn/wrapper/maven-wrapper.jar
+finance-backend/HELP.md
+
+# Frontend
+finance-desktop/node_modules/
+finance-desktop/dist/
+finance-desktop/dist-ssr/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Editors/IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.project
+.classpath
+.settings/
+.factorypath
+.springBeans
+.sts4-cache
+
+# OS / misc
+.DS_Store
+*.local
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

@@ -6,6 +6,8 @@ const fs = require('node:fs');
 const isDev = !app.isPackaged;
 const DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173';
 const BACKEND_JAR = 'finance-backend-0.0.1-SNAPSHOT.jar';
+const forceDevTools = process.argv.includes('--dev');
+const debugBackend = forceDevTools;
 
 function getJavaCmd() {
   if (isDev) {
@@ -13,7 +15,13 @@ function getJavaCmd() {
   }
 
   const jreBase = path.join(process.resourcesPath, 'jre');
-  return path.join(jreBase, 'bin', 'java.exe');
+  const bundled = path.join(jreBase, 'bin', 'java.exe');
+  if (fs.existsSync(bundled)) {
+    return bundled;
+  }
+
+  console.warn('Bundled JRE not found, falling back to system java');
+  return 'java';
 }
 
 function getPortableDataDir() {
@@ -38,8 +46,6 @@ let backendProc = null;
 
 function startBackend() {
   const jarPath = getBackendJarPath();
-  const javaCmd = getJavaCmd();
-
   const env = { ...process.env };
 
   if (!isDev) {
@@ -52,22 +58,30 @@ function startBackend() {
     }
   }
 
-  console.log('Starting backend from', jarPath);
+  function spawnBackend(javaCmd, allowFallback) {
+    console.log('Starting backend from', jarPath, 'using', javaCmd);
 
-  backendProc = spawn(javaCmd, ['-jar', jarPath], {
-    env,
-    stdio: 'ignore',
-    windowsHide: true,
-  });
+    backendProc = spawn(javaCmd, ['-jar', jarPath], {
+      env,
+      stdio: debugBackend ? 'inherit' : 'ignore',
+      windowsHide: true,
+    });
 
-  backendProc.on('error', (err) => {
-    console.error('Backend process error:', err);
-  });
+    backendProc.on('error', (err) => {
+      console.error('Backend process error:', err);
+    });
 
-  backendProc.on('exit', (code, signal) => {
-    console.log(`Backend process exited with code=${code}, signal=${signal}`);
-    backendProc = null;
-  });
+    backendProc.on('exit', (code, signal) => {
+      console.log(`Backend process exited with code=${code}, signal=${signal}`);
+      backendProc = null;
+      if (!isDev && allowFallback && javaCmd !== 'java' && code !== 0) {
+        console.warn('Retrying backend with system java fallback');
+        spawnBackend('java', false);
+      }
+    });
+  }
+
+  spawnBackend(getJavaCmd(), true);
 }
 
 function stopBackend() {
@@ -92,7 +106,14 @@ function createWindow() {
   } else {
     const indexPath = path.join(__dirname, '..', 'dist', 'index.html');
     win.loadFile(indexPath);
+    if (forceDevTools) {
+      win.webContents.openDevTools({ mode: 'detach' });
+    }
   }
+
+  win.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
+    console.error('Renderer failed to load', { errorCode, errorDescription, validatedURL });
+  });
 }
 
 app.whenReady().then(() => {

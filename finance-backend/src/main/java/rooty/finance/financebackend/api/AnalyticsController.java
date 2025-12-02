@@ -1,8 +1,5 @@
 package rooty.finance.financebackend.api;
 
-import java.time.LocalDate;
-import java.time.YearMonth;
-import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -12,6 +9,10 @@ import rooty.finance.financebackend.api.dto.CategoryAmountDto;
 import rooty.finance.financebackend.api.dto.MonthSummaryDto;
 import rooty.finance.financebackend.api.dto.NetWorthPointDto;
 import rooty.finance.financebackend.service.AnalyticsService;
+
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/analytics")

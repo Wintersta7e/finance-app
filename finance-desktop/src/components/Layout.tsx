@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 
-type PageKey = 'dashboard' | 'accounts' | 'transactions';
+type PageKey = 'dashboard' | 'accounts' | 'transactions' | 'recurring' | 'analytics' | 'budgets';
 
 interface LayoutProps {
   currentPage: PageKey;
@@ -64,6 +64,51 @@ export function Layout({ currentPage, onChangePage, children }: LayoutProps) {
               }}
             >
               Transactions
+            </button>
+          </li>
+          <li>
+            <button
+              onClick={() => onChangePage('recurring')}
+              style={{
+                background: currentPage === 'recurring' ? '#eee' : 'transparent',
+                border: 'none',
+                padding: '0.5rem 0',
+                width: '100%',
+                textAlign: 'left',
+                cursor: 'pointer',
+              }}
+            >
+              Recurring
+            </button>
+          </li>
+          <li>
+            <button
+              onClick={() => onChangePage('analytics')}
+              style={{
+                background: currentPage === 'analytics' ? '#eee' : 'transparent',
+                border: 'none',
+                padding: '0.5rem 0',
+                width: '100%',
+                textAlign: 'left',
+                cursor: 'pointer',
+              }}
+            >
+              Analytics
+            </button>
+          </li>
+          <li>
+            <button
+              onClick={() => onChangePage('budgets')}
+              style={{
+                background: currentPage === 'budgets' ? '#eee' : 'transparent',
+                border: 'none',
+                padding: '0.5rem 0',
+                width: '100%',
+                textAlign: 'left',
+                cursor: 'pointer',
+              }}
+            >
+              Budgets
             </button>
           </li>
         </ul>

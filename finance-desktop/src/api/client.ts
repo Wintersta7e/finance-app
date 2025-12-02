@@ -6,6 +6,10 @@ import type {
   CategoryAmount,
   NetWorthPoint,
   AppSettings,
+  RecurringRule,
+  Category,
+  Budget,
+  BudgetVsActual,
 } from './types';
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -37,6 +41,10 @@ export const api = {
     });
   },
 
+  getCategories(): Promise<Category[]> {
+    return request<Category[]>('/categories');
+  },
+
   getTransactions(from: string, to: string): Promise<Transaction[]> {
     const params = new URLSearchParams({ from, to });
     return request<Transaction[]>(`/transactions?${params.toString()}`);
@@ -66,5 +74,64 @@ export const api = {
   getNetWorthTrend(from: string, to: string): Promise<NetWorthPoint[]> {
     const params = new URLSearchParams({ from, to });
     return request<NetWorthPoint[]>(`/analytics/net-worth-trend?${params.toString()}`);
+  },
+
+  getRecurringRules() {
+    return request<RecurringRule[]>('/recurring-rules');
+  },
+
+  createRecurringRule(payload: Omit<RecurringRule, 'id'>) {
+    return request<RecurringRule>('/recurring-rules', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  updateRecurringRule(id: number, payload: Omit<RecurringRule, 'id'>) {
+    return request<RecurringRule>(`/recurring-rules/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  deleteRecurringRule(id: number) {
+    return request<void>(`/recurring-rules/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  generateNextRecurringRule(id: number) {
+    return request<void>(`/recurring-rules/${id}/generate-next`, {
+      method: 'POST',
+    });
+  },
+
+  getBudgets() {
+    return request<Budget[]>('/budgets');
+  },
+
+  createBudget(payload: Omit<Budget, 'id'>) {
+    return request<Budget>('/budgets', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  updateBudget(id: number, payload: Omit<Budget, 'id'>) {
+    return request<Budget>(`/budgets/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  deleteBudget(id: number) {
+    return request<void>(`/budgets/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  getBudgetVsActual(year: number, month: number) {
+    const params = new URLSearchParams({ year: String(year), month: String(month) });
+    return request<BudgetVsActual[]>(`/analytics/budget-vs-actual?${params.toString()}`);
   },
 };

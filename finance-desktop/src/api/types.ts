@@ -61,3 +61,19 @@ export interface NetWorthPoint {
   date: string;
   value: number;
 }
+
+export interface Budget {
+  id: number;
+  categoryId: number;
+  amount: number;
+  period: string;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+}
+
+export interface BudgetVsActual {
+  categoryId: number;
+  categoryName: string;
+  budgetAmount: number;
+  actualAmount: number;
+}

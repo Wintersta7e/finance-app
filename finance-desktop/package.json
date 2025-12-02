@@ -2,6 +2,8 @@
   "name": "finance-desktop",
   "private": true,
   "version": "0.0.0",
+  "description": "Finance desktop app with embedded backend",
+  "main": "electron/main.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -9,10 +11,10 @@
     "electron": "cross-env NODE_ENV=development electron ./electron/main.js",
     "electron:prod": "cross-env NODE_ENV=production electron ./electron/main.js",
     "dev:desktop": "concurrently -k \"npm run dev\" \"wait-on http://localhost:5173 && npm run electron\"",
+    "build:desktop": "npm run build && electron-builder",
     "lint": "eslint ."
   },
   "dependencies": {
-    "electron": "^34.0.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
@@ -24,13 +26,42 @@
     "@vitejs/plugin-react": "^5.1.1",
     "concurrently": "^9.0.0",
     "cross-env": "^7.0.3",
+    "electron": "^34.0.0",
+    "electron-builder": "^26.0.12",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
-    "wait-on": "^8.0.0",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
-    "vite": "^7.2.4"
+    "vite": "^7.2.4",
+    "wait-on": "^8.0.0"
+  },
+  "build": {
+    "appId": "rooty.finance.desktop",
+    "productName": "Finance Desktop",
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../finance-backend/target",
+        "to": "backend",
+        "filter": [
+          "finance-backend-0.0.1-SNAPSHOT.jar"
+        ]
+      }
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    },
+    "mac": {
+      "target": "dmg"
+    }
   }
 }

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Layout, PageKey } from './components/Layout';
+import { Layout } from './components/Layout';
+import type { PageKey } from './components/Layout';
 import { AccountsPage } from './pages/AccountsPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { TransactionsPage } from './pages/TransactionsPage';

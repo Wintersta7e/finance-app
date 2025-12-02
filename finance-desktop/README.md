@@ -33,6 +33,12 @@ Electron shell around the finance backend UI. The app talks to the Spring Boot s
 - `src/api/` – `config.ts` (base URL), `types.ts` (DTOs), `client.ts` (fetch helpers for backend endpoints).
 - `public/` – static assets bundled by Vite.
 
+## Portable runtime notes (Windows)
+- The packaged EXE looks for `resources/jre/bin/java.exe`; if missing, it falls back to system `java`.
+- Backend defaults to `spring.datasource.url=jdbc:h2:file:~/finance-app/data/finance-db;...` unless `SPRING_DATASOURCE_URL` is set (Electron sets it to `<EXE_DIR>\data\finance-db` when portable).
+- Ensure port 8080 is free; otherwise the backend will fail to start and the UI will show connection refused until restarted.
+- Check health from a console: `curl http://127.0.0.1:8080/api/health`.
+
 ## Scripts (package.json)
 - `dev:desktop` – concurrently run Vite and Electron dev shell (waits for dev server).
 - `electron` / `electron:prod` – launch Electron in dev/prod mode.

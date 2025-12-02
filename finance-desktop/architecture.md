@@ -5,6 +5,7 @@ Electron shell hosting a Vite/React TypeScript frontend that communicates with t
 
 ## Runtime flow
 - **Electron main (`electron/main.js`)** creates a `BrowserWindow`. In development it loads `http://localhost:5173` (Vite dev server) and opens devtools; in production it loads `dist/index.html`, spawns the packaged Spring Boot JAR from `resources/backend/`, and uses a bundled Windows JRE (`resources/jre/bin/java.exe`). When built as a portable EXE, it stores the H2 database alongside the EXE in `data/` via `SPRING_DATASOURCE_URL`.
+- If the bundled JRE is missing, main falls back to system `java`. The backend binds to port 8080; ensure it is free or the UI will show connection errors until restarted.
 - **Renderer (React)** lives under `src/`, bootstrapped by `src/main.tsx`. `src/App.tsx` renders a sidebar layout and switches between Dashboard, Accounts, Transactions, Recurring Rules, Analytics (charts), and Budgets pages that fetch backend data (accounts, categories, transactions, recurring rules, budgets, analytics, settings).
 - **IPC/Node integration**: disabled (`nodeIntegration: false`, `contextIsolation: true`); renderer uses standard browser APIs to call the backend.
 

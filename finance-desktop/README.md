@@ -4,13 +4,14 @@ Electron shell around the finance backend UI. The app talks to the Spring Boot s
 
 ## Prerequisites
 - Node 20+
-- Backend running locally (`mvn spring-boot:run` in `../finance-backend`)
+- Backend running locally (`mvn spring-boot:run` in `../finance-backend`) or packaged JAR in `../finance-backend/target/`
 
 ## Install & run
 - Install deps: `npm install`
 - Dev (Vite + Electron): `npm run dev:desktop` (starts Vite on `http://localhost:5173`, waits, then launches Electron)
 - Electron only against dev server: `npm run electron`
 - Production-like Electron (loads built `dist/`): `npm run electron:prod` (requires `npm run build` first)
+- Package desktop app (includes backend JAR via extraResources): `npm run build:desktop` (ensure `../finance-backend/target/finance-backend-0.0.1-SNAPSHOT.jar` exists)
 - Frontend-only:
   - `npm run dev` – Vite dev server
   - `npm run build` – Vite build
@@ -18,14 +19,14 @@ Electron shell around the finance backend UI. The app talks to the Spring Boot s
 
 ## API expectations
 - Backend base URL: `http://127.0.0.1:8080/api`
-- Current UI calls `/api/accounts`, `/api/transactions`, and `/api/analytics/*` (month summary) plus `/api/settings`. Backend CORS already allows local Electron/Vite clients.
+- Current UI calls accounts, categories, transactions, recurring rules, budgets, analytics (month summary, category breakdown, net worth trend, budget vs actual), and settings. Backend CORS already allows local Electron/Vite clients.
 
 ## Project structure
-- `electron/main.js` – Electron main process; loads Vite in dev or `dist/index.html` in prod.
+- `electron/main.js` – Electron main process; loads Vite in dev or `dist/index.html` in prod; spawns bundled backend JAR when packaged.
 - `src/main.tsx` – Bootstraps React into the DOM.
-- `src/App.tsx` – Page shell; switches between Dashboard, Accounts, and Transactions.
-- `src/components/Layout.tsx` – Simple sidebar layout and navigation.
-- `src/pages/` – `DashboardPage`, `AccountsPage`, `TransactionsPage` render data from the backend.
+- `src/App.tsx` – Page shell; switches between Dashboard, Accounts, Transactions, Recurring, Analytics, and Budgets.
+- `src/components/Layout.tsx` – Sidebar layout and navigation; chart components under `src/components/charts/`.
+- `src/pages/` – dashboard, accounts, transactions, recurring rules, analytics (charts), budgets.
 - `src/api/` – `config.ts` (base URL), `types.ts` (DTOs), `client.ts` (fetch helpers for backend endpoints).
 - `public/` – static assets bundled by Vite.
 

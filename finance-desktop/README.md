@@ -18,12 +18,15 @@ Electron shell around the finance backend UI. The app talks to the Spring Boot s
 
 ## API expectations
 - Backend base URL: `http://127.0.0.1:8080/api`
-- Current UI calls `/api/health`; upcoming work: Dashboard, Accounts, Transactions. Add CORS rules on the backend to allow `localhost:5173` and the Electron app.
+- Current UI calls `/api/accounts`, `/api/transactions`, and `/api/analytics/*` (month summary) plus `/api/settings`. Backend CORS already allows local Electron/Vite clients.
 
 ## Project structure
 - `electron/main.js` – Electron main process; loads Vite in dev or `dist/index.html` in prod.
-- `src/App.tsx` – React entry; currently renders backend health status.
 - `src/main.tsx` – Bootstraps React into the DOM.
+- `src/App.tsx` – Page shell; switches between Dashboard, Accounts, and Transactions.
+- `src/components/Layout.tsx` – Simple sidebar layout and navigation.
+- `src/pages/` – `DashboardPage`, `AccountsPage`, `TransactionsPage` render data from the backend.
+- `src/api/` – `config.ts` (base URL), `types.ts` (DTOs), `client.ts` (fetch helpers for backend endpoints).
 - `public/` – static assets bundled by Vite.
 
 ## Scripts (package.json)

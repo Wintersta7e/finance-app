@@ -12,8 +12,13 @@ import org.springframework.stereotype.Service;
 import rooty.finance.financebackend.api.dto.CategoryAmountDto;
 import rooty.finance.financebackend.api.dto.MonthSummaryDto;
 import rooty.finance.financebackend.api.dto.NetWorthPointDto;
+import rooty.finance.financebackend.api.dto.BudgetVsActualDto;
 import rooty.finance.financebackend.domain.Account;
 import rooty.finance.financebackend.domain.AccountRepository;
+import rooty.finance.financebackend.domain.Budget;
+import rooty.finance.financebackend.domain.BudgetRepository;
+import rooty.finance.financebackend.domain.Category;
+import rooty.finance.financebackend.domain.CategoryRepository;
 import rooty.finance.financebackend.domain.Transaction;
 import rooty.finance.financebackend.domain.TransactionRepository;
 
@@ -22,10 +27,18 @@ public class AnalyticsService {
 
     private final TransactionRepository transactionRepository;
     private final AccountRepository accountRepository;
+    private final BudgetRepository budgetRepository;
+    private final CategoryRepository categoryRepository;
 
-    public AnalyticsService(TransactionRepository transactionRepository, AccountRepository accountRepository) {
+    public AnalyticsService(
+            TransactionRepository transactionRepository,
+            AccountRepository accountRepository,
+            BudgetRepository budgetRepository,
+            CategoryRepository categoryRepository) {
         this.transactionRepository = transactionRepository;
         this.accountRepository = accountRepository;
+        this.budgetRepository = budgetRepository;
+        this.categoryRepository = categoryRepository;
     }
 
     public MonthSummaryDto getMonthSummary(int year, int month) {
@@ -92,6 +105,46 @@ public class AnalyticsService {
             cursor = cursor.plusDays(1);
         }
         return points;
+    }
+
+    public List<BudgetVsActualDto> getBudgetVsActual(YearMonth month) {
+        LocalDate start = month.atDay(1);
+        LocalDate end = month.atEndOfMonth();
+
+        Map<Long, BigDecimal> actuals = new HashMap<>();
+        for (Transaction tx : transactionRepository.findByDateBetween(start, end)) {
+            if (tx.getCategory() == null || tx.getAmount() == null || tx.getAmount().signum() >= 0) {
+                continue;
+            }
+            Long categoryId = tx.getCategory().getId();
+            BigDecimal current = actuals.getOrDefault(categoryId, BigDecimal.ZERO);
+            actuals.put(categoryId, current.add(tx.getAmount().abs()));
+        }
+
+        Map<Long, String> categoryNames = new HashMap<>();
+        for (Category category : categoryRepository.findAll()) {
+            categoryNames.put(category.getId(), category.getName());
+        }
+
+        List<BudgetVsActualDto> result = new ArrayList<>();
+        for (Budget budget : budgetRepository.findAll()) {
+            if (!isActiveForMonth(budget, start, end)) {
+                continue;
+            }
+            BigDecimal budgetAmount = defaultAmount(budget.getAmount());
+            BigDecimal actualAmount = actuals.getOrDefault(budget.getCategoryId(), BigDecimal.ZERO);
+            String categoryName = categoryNames.getOrDefault(budget.getCategoryId(), "Category " + budget.getCategoryId());
+
+            result.add(new BudgetVsActualDto(budget.getCategoryId(), categoryName, budgetAmount, actualAmount));
+        }
+
+        return result;
+    }
+
+    private boolean isActiveForMonth(Budget budget, LocalDate monthStart, LocalDate monthEnd) {
+        LocalDate from = budget.getEffectiveFrom() != null ? budget.getEffectiveFrom() : LocalDate.MIN;
+        LocalDate to = budget.getEffectiveTo() != null ? budget.getEffectiveTo() : LocalDate.MAX;
+        return !from.isAfter(monthEnd) && !to.isBefore(monthStart);
     }
 
     private BigDecimal calculateBalanceUpTo(LocalDate dateInclusive) {

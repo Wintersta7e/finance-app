@@ -4,10 +4,12 @@ import java.util.Optional;
 import rooty.finance.financebackend.api.dto.AccountDto;
 import rooty.finance.financebackend.api.dto.AppSettingsDto;
 import rooty.finance.financebackend.api.dto.CategoryDto;
+import rooty.finance.financebackend.api.dto.BudgetDto;
 import rooty.finance.financebackend.api.dto.RecurringRuleDto;
 import rooty.finance.financebackend.api.dto.TransactionDto;
 import rooty.finance.financebackend.domain.Account;
 import rooty.finance.financebackend.domain.AppSettings;
+import rooty.finance.financebackend.domain.Budget;
 import rooty.finance.financebackend.domain.Category;
 import rooty.finance.financebackend.domain.RecurringRule;
 import rooty.finance.financebackend.domain.Transaction;
@@ -152,5 +154,34 @@ public final class DtoMapper {
         settings.setCurrencyCode(dto.currencyCode());
         settings.setFirstDayOfMonth(dto.firstDayOfMonth());
         settings.setFirstDayOfWeek(dto.firstDayOfWeek());
+    }
+
+    public static BudgetDto toDto(Budget budget) {
+        return new BudgetDto(
+                budget.getId(),
+                budget.getCategoryId(),
+                budget.getAmount(),
+                budget.getPeriod(),
+                budget.getEffectiveFrom(),
+                budget.getEffectiveTo());
+    }
+
+    public static Budget toEntity(BudgetDto dto) {
+        return Budget.builder()
+                .id(dto.id())
+                .categoryId(dto.categoryId())
+                .amount(dto.amount())
+                .period(dto.period())
+                .effectiveFrom(dto.effectiveFrom())
+                .effectiveTo(dto.effectiveTo())
+                .build();
+    }
+
+    public static void updateBudget(Budget budget, BudgetDto dto) {
+        budget.setCategoryId(dto.categoryId());
+        budget.setAmount(dto.amount());
+        budget.setPeriod(dto.period());
+        budget.setEffectiveFrom(dto.effectiveFrom());
+        budget.setEffectiveTo(dto.effectiveTo());
     }
 }

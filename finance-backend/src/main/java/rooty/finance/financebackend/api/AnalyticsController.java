@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import rooty.finance.financebackend.api.dto.BudgetVsActualDto;
 import rooty.finance.financebackend.api.dto.CategoryAmountDto;
 import rooty.finance.financebackend.api.dto.MonthSummaryDto;
 import rooty.finance.financebackend.api.dto.NetWorthPointDto;
@@ -36,5 +37,10 @@ public class AnalyticsController {
     public List<NetWorthPointDto> getNetWorthTrend(
             @RequestParam("from") LocalDate from, @RequestParam("to") LocalDate to) {
         return analyticsService.getNetWorthTrend(from, to);
+    }
+
+    @GetMapping("/budget-vs-actual")
+    public List<BudgetVsActualDto> getBudgetVsActual(@RequestParam int year, @RequestParam int month) {
+        return analyticsService.getBudgetVsActual(YearMonth.of(year, month));
     }
 }

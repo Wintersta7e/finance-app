@@ -11,4 +11,5 @@ public record TransactionDto(
         Long accountId,
         Long categoryId,
         String notes,
-        Long recurringRuleId) {}
+        Long recurringRuleId) {
+}

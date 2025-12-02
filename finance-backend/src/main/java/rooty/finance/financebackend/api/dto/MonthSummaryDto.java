@@ -7,4 +7,5 @@ public record MonthSummaryDto(
         BigDecimal fixedCosts,
         BigDecimal variableExpenses,
         BigDecimal savings,
-        BigDecimal endOfMonthBalance) {}
+        BigDecimal endOfMonthBalance) {
+}

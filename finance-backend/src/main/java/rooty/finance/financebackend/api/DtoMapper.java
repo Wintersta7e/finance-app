@@ -1,22 +1,14 @@
 package rooty.finance.financebackend.api;
 
+import rooty.finance.financebackend.api.dto.*;
+import rooty.finance.financebackend.domain.*;
+
 import java.util.Optional;
-import rooty.finance.financebackend.api.dto.AccountDto;
-import rooty.finance.financebackend.api.dto.AppSettingsDto;
-import rooty.finance.financebackend.api.dto.CategoryDto;
-import rooty.finance.financebackend.api.dto.BudgetDto;
-import rooty.finance.financebackend.api.dto.RecurringRuleDto;
-import rooty.finance.financebackend.api.dto.TransactionDto;
-import rooty.finance.financebackend.domain.Account;
-import rooty.finance.financebackend.domain.AppSettings;
-import rooty.finance.financebackend.domain.Budget;
-import rooty.finance.financebackend.domain.Category;
-import rooty.finance.financebackend.domain.RecurringRule;
-import rooty.finance.financebackend.domain.Transaction;
 
 public final class DtoMapper {
 
-    private DtoMapper() {}
+    private DtoMapper() {
+    }
 
     public static AccountDto toDto(Account account) {
         return new AccountDto(

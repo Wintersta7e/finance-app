@@ -1,10 +1,6 @@
 package rooty.finance.financebackend.api;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import rooty.finance.financebackend.api.dto.AppSettingsDto;
 import rooty.finance.financebackend.domain.AppSettings;
 import rooty.finance.financebackend.domain.AppSettingsRepository;

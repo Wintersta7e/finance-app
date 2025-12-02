@@ -17,8 +17,9 @@ Spring Boot 4 / Java 21 single-user finance backend that serves an Electron clie
 - Categories: `/api/categories` CRUD
 - Transactions: `/api/transactions?from=YYYY-MM-DD&to=YYYY-MM-DD` with CRUD
 - Recurring rules: `/api/recurring-rules` CRUD and `/api/recurring-rules/{id}/generate-next`
+- Budgets: `/api/budgets` CRUD
 - Settings: `/api/settings` GET/PUT (single row)
-- Analytics: `/api/analytics/month-summary`, `/category-breakdown`, `/net-worth-trend`
+- Analytics: `/api/analytics/month-summary`, `/category-breakdown`, `/net-worth-trend`, `/budget-vs-actual`
 
 ## Data defaults
 On first boot, seeds a main account, common categories, and app settings (EUR, first day = 1). Entities and DTOs live under `rooty.finance.financebackend.domain` and `rooty.finance.financebackend.api.dto` respectively.

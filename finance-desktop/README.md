@@ -11,7 +11,10 @@ Electron shell around the finance backend UI. The app talks to the Spring Boot s
 - Dev (Vite + Electron): `npm run dev:desktop` (starts Vite on `http://localhost:5173`, waits, then launches Electron)
 - Electron only against dev server: `npm run electron`
 - Production-like Electron (loads built `dist/`): `npm run electron:prod` (requires `npm run build` first)
-- Package desktop app (includes backend JAR via extraResources): `npm run build:desktop` (ensure `../finance-backend/target/finance-backend-0.0.1-SNAPSHOT.jar` exists)
+- Package Windows portable desktop (bundles backend JAR + JRE): `npm run build:desktop`
+  - Before packaging, place a Windows JRE/JDK under `jre/` (e.g. `jre/bin/java.exe`).
+  - Ensure the backend jar exists at `../finance-backend/target/finance-backend-0.0.1-SNAPSHOT.jar`.
+  - Output: `dist/Finance Desktop-<version>-portable.exe`. All data is stored next to the EXE in `data/`.
 - Frontend-only:
   - `npm run dev` – Vite dev server
   - `npm run build` – Vite build
@@ -22,7 +25,7 @@ Electron shell around the finance backend UI. The app talks to the Spring Boot s
 - Current UI calls accounts, categories, transactions, recurring rules, budgets, analytics (month summary, category breakdown, net worth trend, budget vs actual), and settings. Backend CORS already allows local Electron/Vite clients.
 
 ## Project structure
-- `electron/main.js` – Electron main process; loads Vite in dev or `dist/index.html` in prod; spawns bundled backend JAR when packaged.
+- `electron/main.js` – Electron main process; loads Vite in dev or `dist/index.html` in prod; spawns bundled backend JAR via bundled JRE when packaged and points Spring to a data folder next to the portable EXE.
 - `src/main.tsx` – Bootstraps React into the DOM.
 - `src/App.tsx` – Page shell; switches between Dashboard, Accounts, Transactions, Recurring, Analytics, and Budgets.
 - `src/components/Layout.tsx` – Sidebar layout and navigation; chart components under `src/components/charts/`.

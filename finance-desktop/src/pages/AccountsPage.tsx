@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import type { Account } from '../api/types';
+import { Card } from '../components/ui/Card';
+import { Page } from '../components/ui/Page';
+import { tokens } from '../theme';
 
 export function AccountsPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -19,34 +22,33 @@ export function AccountsPage() {
   }, []);
 
   return (
-    <div>
-      <h1>Accounts</h1>
-      {error && <p style={{ color: 'red' }}>Error: {error}</p>}
-      {!error && accounts.length === 0 && <p>No accounts yet.</p>}
-      {accounts.length > 0 && (
-        <table style={{ marginTop: '1rem', borderCollapse: 'collapse', minWidth: '400px' }}>
-          <thead>
-            <tr>
-              <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left', padding: '0.5rem' }}>Name</th>
-              <th style={{ borderBottom: '1px solid #ddd', textAlign: 'left', padding: '0.5rem' }}>Type</th>
-              <th style={{ borderBottom: '1px solid #ddd', textAlign: 'right', padding: '0.5rem' }}>
-                Initial balance
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {accounts.map((a) => (
-              <tr key={a.id}>
-                <td style={{ borderBottom: '1px solid #eee', padding: '0.5rem' }}>{a.name}</td>
-                <td style={{ borderBottom: '1px solid #eee', padding: '0.5rem' }}>{a.type}</td>
-                <td style={{ borderBottom: '1px solid #eee', padding: '0.5rem', textAlign: 'right' }}>
-                  {a.initialBalance.toFixed(2)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </div>
+    <Page title="Accounts" subtitle="Where your balances live">
+      <Card>
+        {error && <span style={{ color: tokens.colors.danger }}>Error: {error}</span>}
+        {!error && accounts.length === 0 && <span style={{ color: tokens.colors.textMuted }}>No accounts yet.</span>}
+        {accounts.length > 0 && (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ minWidth: '520px' }}>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Type</th>
+                  <th style={{ textAlign: 'right' }}>Initial balance</th>
+                </tr>
+              </thead>
+              <tbody>
+                {accounts.map((a) => (
+                  <tr key={a.id}>
+                    <td>{a.name}</td>
+                    <td>{a.type}</td>
+                    <td style={{ textAlign: 'right', color: tokens.colors.textPrimary }}>{a.initialBalance.toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+    </Page>
   );
 }

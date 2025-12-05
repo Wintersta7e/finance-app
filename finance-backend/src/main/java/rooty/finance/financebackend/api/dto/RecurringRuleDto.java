@@ -2,6 +2,7 @@ package rooty.finance.financebackend.api.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import rooty.finance.financebackend.domain.RecurringPeriod;
 
 public record RecurringRuleDto(
         Long id,
@@ -9,7 +10,7 @@ public record RecurringRuleDto(
         Long categoryId,
         BigDecimal amount,
         String direction,
-        String period,
+        RecurringPeriod period,
         LocalDate startDate,
         LocalDate endDate,
         boolean autoPost) {

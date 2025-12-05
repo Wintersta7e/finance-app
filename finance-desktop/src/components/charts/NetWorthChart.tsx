@@ -1,13 +1,18 @@
 import { useEffect, useState } from 'react';
-import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { api } from '../../api/client';
 import type { NetWorthPoint } from '../../api/types';
+import { tokens } from '../../theme';
+
+interface NetWorthChartProps {
+  refreshToken?: number;
+}
 
 function formatDate(date: Date) {
   return date.toISOString().slice(0, 10);
 }
 
-export function NetWorthChart() {
+export function NetWorthChart({ refreshToken = 0 }: NetWorthChartProps) {
   const [data, setData] = useState<NetWorthPoint[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,7 +28,7 @@ export function NetWorthChart() {
         setError(null);
       })
       .catch((err) => setError(err.message));
-  }, []);
+  }, [refreshToken]);
 
   if (error) {
     return <p style={{ color: 'red' }}>Error: {error}</p>;
@@ -36,10 +41,28 @@ export function NetWorthChart() {
   return (
     <ResponsiveContainer width="100%" height={280}>
       <LineChart data={data}>
-        <XAxis dataKey="date" />
-        <YAxis />
-        <Tooltip />
-        <Line type="monotone" dataKey="value" stroke="#2563eb" dot={false} />
+        <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} />
+        <XAxis
+          dataKey="date"
+          tick={{ fill: tokens.colors.textMuted, fontSize: 12 }}
+          tickLine={false}
+          axisLine={{ stroke: tokens.colors.borderSoft }}
+        />
+        <YAxis
+          tick={{ fill: tokens.colors.textMuted, fontSize: 12 }}
+          tickLine={false}
+          axisLine={{ stroke: tokens.colors.borderSoft }}
+          width={72}
+        />
+        <Tooltip
+          contentStyle={{
+            background: tokens.colors.bgElevated,
+            border: `1px solid ${tokens.colors.borderSoft}`,
+            borderRadius: tokens.radii.md,
+            color: tokens.colors.textPrimary,
+          }}
+        />
+        <Line type="monotone" dataKey="value" stroke={tokens.colors.accent} strokeWidth={2.4} dot={false} />
       </LineChart>
     </ResponsiveContainer>
   );

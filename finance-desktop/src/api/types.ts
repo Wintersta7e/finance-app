@@ -13,11 +13,13 @@ export interface Category {
   fixedCost: boolean;
 }
 
+export type RecurringPeriod = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY';
+
 export interface Transaction {
   id: number;
   date: string;
   amount: number;
-  type: 'INCOME' | 'FIXED_COST' | 'VARIABLE_EXPENSE' | 'TRANSFER';
+  type: 'INCOME' | 'EXPENSE' | 'FIXED_COST' | 'VARIABLE_EXPENSE' | 'TRANSFER';
   accountId: number;
   categoryId: number | null;
   notes: string | null;
@@ -27,10 +29,10 @@ export interface Transaction {
 export interface RecurringRule {
   id: number;
   accountId: number;
-  categoryId: number;
+  categoryId: number | null;
   amount: number;
   direction: 'INCOME' | 'EXPENSE';
-  period: 'MONTHLY' | 'WEEKLY' | 'YEARLY';
+  period: RecurringPeriod;
   startDate: string;
   endDate: string | null;
   autoPost: boolean;

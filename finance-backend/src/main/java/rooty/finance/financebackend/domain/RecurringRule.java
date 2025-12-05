@@ -1,9 +1,6 @@
 package rooty.finance.financebackend.domain;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -29,7 +26,8 @@ public class RecurringRule {
     private BigDecimal amount;
     private String direction;
 
-    private String period;
+    @Enumerated(EnumType.STRING)
+    private RecurringPeriod period;
     private LocalDate startDate;
     private LocalDate endDate;
 

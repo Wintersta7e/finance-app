@@ -23,3 +23,6 @@ This repo contains two modules:
   3. `npm run build:desktop`
   4. Run `dist/Finance Desktop-<version>-portable.exe` (data stored next to the EXE in `data/`).
 - Health check when running: `curl http://127.0.0.1:8080/api/health`
+
+## Docs
+- Desktop UI/design system and flows: `finance-desktop/UI.md`

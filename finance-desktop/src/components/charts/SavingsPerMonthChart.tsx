@@ -1,11 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { api } from '../../api/client';
 import type { MonthSummary } from '../../api/types';
+import { tokens } from '../../theme';
+
+interface SavingsPerMonthChartProps {
+  refreshToken?: number;
+}
 
 type Point = { label: string; savings: number };
 
-export function SavingsPerMonthChart() {
+export function SavingsPerMonthChart({ refreshToken = 0 }: SavingsPerMonthChartProps) {
   const [data, setData] = useState<Point[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,7 +36,7 @@ export function SavingsPerMonthChart() {
         setError(null);
       })
       .catch((err) => setError(err.message));
-  }, []);
+  }, [refreshToken]);
 
   if (error) {
     return <p style={{ color: 'red' }}>Error: {error}</p>;
@@ -44,10 +49,28 @@ export function SavingsPerMonthChart() {
   return (
     <ResponsiveContainer width="100%" height={240}>
       <BarChart data={data}>
-        <XAxis dataKey="label" />
-        <YAxis />
-        <Tooltip />
-        <Bar dataKey="savings" fill="#10b981" />
+        <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} />
+        <XAxis
+          dataKey="label"
+          tick={{ fill: tokens.colors.textMuted, fontSize: 12 }}
+          tickLine={false}
+          axisLine={{ stroke: tokens.colors.borderSoft }}
+        />
+        <YAxis
+          tick={{ fill: tokens.colors.textMuted, fontSize: 12 }}
+          tickLine={false}
+          axisLine={{ stroke: tokens.colors.borderSoft }}
+          width={70}
+        />
+        <Tooltip
+          contentStyle={{
+            background: tokens.colors.bgElevated,
+            border: `1px solid ${tokens.colors.borderSoft}`,
+            borderRadius: tokens.radii.md,
+            color: tokens.colors.textPrimary,
+          }}
+        />
+        <Bar dataKey="savings" fill={tokens.colors.success} radius={[8, 8, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );

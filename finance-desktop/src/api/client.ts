@@ -21,12 +21,18 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     ...options,
   });
 
+  const text = await res.text().catch(() => '');
+
   if (!res.ok) {
-    const text = await res.text().catch(() => '');
     throw new Error(`API ${res.status} ${res.statusText}: ${text}`);
   }
 
-  return res.json() as Promise<T>;
+  // Many endpoints return 204/empty bodies; avoid JSON parsing failures.
+  if (!text) {
+    return undefined as T;
+  }
+
+  return JSON.parse(text) as T;
 }
 
 export const api = {
@@ -43,6 +49,26 @@ export const api = {
 
   getCategories(): Promise<Category[]> {
     return request<Category[]>('/categories');
+  },
+
+  createCategory(payload: Omit<Category, 'id'>): Promise<Category> {
+    return request<Category>('/categories', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  updateCategory(id: number, payload: Omit<Category, 'id'>): Promise<Category> {
+    return request<Category>(`/categories/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  deleteCategory(id: number): Promise<void> {
+    return request<void>(`/categories/${id}`, {
+      method: 'DELETE',
+    });
   },
 
   getTransactions(from: string, to: string): Promise<Transaction[]> {
@@ -126,6 +152,12 @@ export const api = {
 
   deleteBudget(id: number) {
     return request<void>(`/budgets/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  deleteTransaction(id: number) {
+    return request<void>(`/transactions/${id}`, {
       method: 'DELETE',
     });
   },

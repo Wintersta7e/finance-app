@@ -1,86 +1,134 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api/client';
 import type { BudgetVsActual, MonthSummary } from '../api/types';
 import { NetWorthChart } from '../components/charts/NetWorthChart';
+import { QuickTransactionForm } from '../components/transactions/QuickTransactionForm';
+import { Card } from '../components/ui/Card';
+import { Page } from '../components/ui/Page';
+import { tokens } from '../theme';
 
-export function DashboardPage() {
+interface DashboardPageProps {
+  analyticsRefreshToken: number;
+  onDataChanged: () => void;
+}
+
+export function DashboardPage({ analyticsRefreshToken, onDataChanged }: DashboardPageProps) {
   const [summary, setSummary] = useState<MonthSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [budgetStatus, setBudgetStatus] = useState<BudgetVsActual[]>([]);
   const [budgetError, setBudgetError] = useState<string | null>(null);
 
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+
+  const loadSummary = useCallback(() => {
+    api
+      .getMonthSummary(year, month)
+      .then((data) => {
+        setSummary(data);
+        setError(null);
+      })
+      .catch((err) => {
+        setError(err.message);
+        setSummary(null);
+      });
+  }, [month, year]);
+
+  const loadBudgets = useCallback(() => {
+    api
+      .getBudgetVsActual(year, month)
+      .then((data) => {
+        setBudgetStatus(data);
+        setBudgetError(null);
+      })
+      .catch((err) => {
+        setBudgetError(err.message);
+        setBudgetStatus([]);
+      });
+  }, [month, year]);
+
   useEffect(() => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth() + 1;
+    loadSummary();
+    loadBudgets();
+  }, [loadSummary, loadBudgets]);
 
-    api.getMonthSummary(year, month)
-        .then((data) => {
-          setSummary(data);
-          setError(null);
-        })
-        .catch((err) => {
-          setError(err.message);
-          setSummary(null);
-        });
+  useEffect(() => {
+    loadSummary();
+    loadBudgets();
+  }, [analyticsRefreshToken, loadSummary, loadBudgets]);
 
-    api.getBudgetVsActual(year, month)
-        .then((data) => {
-          setBudgetStatus(data);
-          setBudgetError(null);
-        })
-        .catch((err) => {
-          setBudgetError(err.message);
-          setBudgetStatus([]);
-        });
-  }, []);
+  const handleTransactionAdded = () => {
+    loadSummary();
+    loadBudgets();
+    onDataChanged();
+  };
 
   return (
-    <div>
-      <h1>Dashboard</h1>
-      {error && <p style={{ color: 'red' }}>Error: {error}</p>}
-      {!error && !summary && <p>Loading summary…</p>}
+    <Page title="Dashboard" subtitle="Snapshot of this month&apos;s performance">
+      <QuickTransactionForm onChange={handleTransactionAdded} />
+
+      {error && <Card><span style={{ color: tokens.colors.danger }}>Error: {error}</span></Card>}
+      {!error && !summary && <Card>Loading summary…</Card>}
+
       {summary && (
-        <div style={{ display: 'flex', gap: '1.5rem', marginTop: '1rem' }}>
-          <SummaryCard label="Income this month" value={summary.totalIncome} />
-          <SummaryCard label="Expenses this month" value={summary.fixedCosts + summary.variableExpenses} />
-          <SummaryCard label="Savings this month" value={summary.savings} />
-          <SummaryCard label="End-of-month balance" value={summary.endOfMonthBalance} />
+        <div style={{ display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
+          <SummaryCard label="Income this month" value={summary.totalIncome} tone="accent" />
+          <SummaryCard label="Expenses this month" value={summary.fixedCosts + summary.variableExpenses} tone="muted" />
+          <SummaryCard label="Savings this month" value={summary.savings} tone="success" />
+          <SummaryCard label="End-of-month balance" value={summary.endOfMonthBalance} tone="muted" />
         </div>
       )}
-      <div style={{ marginTop: '1.5rem' }}>
-        <h2 style={{ marginBottom: '0.5rem' }}>Budgets</h2>
-        {budgetError && <p style={{ color: 'red' }}>Error: {budgetError}</p>}
-        {!budgetError && budgetStatus.length === 0 && <p>No budgets yet.</p>}
-        {budgetStatus.length > 0 && (
-          <div style={{ display: 'grid', gap: '0.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}>
-            {budgetStatus.map((b) => (
-              <BudgetCard key={b.categoryId} item={b} />
-            ))}
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          gap: '1.25rem',
+          alignItems: 'stretch',
+        }}
+      >
+        <Card title="Budgets" subtitle="Current month" contentGap="0.9rem">
+          {budgetError && <span style={{ color: tokens.colors.danger }}>Error: {budgetError}</span>}
+          {!budgetError && budgetStatus.length === 0 && <span style={{ color: tokens.colors.textMuted }}>No budgets yet.</span>}
+          {budgetStatus.length > 0 && (
+            <div style={{ display: 'grid', gap: '0.6rem', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
+              {budgetStatus.map((b) => (
+                <BudgetCard key={b.categoryId} item={b} />
+              ))}
+            </div>
+          )}
+        </Card>
+
+        <Card title="Net worth trend" subtitle="Last 6 months">
+          <div style={{ height: 300 }}>
+            <NetWorthChart refreshToken={analyticsRefreshToken} />
           </div>
-        )}
+        </Card>
       </div>
-      <div style={{ marginTop: '2rem' }}>
-        <h2 style={{ marginBottom: '0.5rem' }}>Net worth trend</h2>
-        <NetWorthChart />
-      </div>
-    </div>
+    </Page>
   );
 }
 
-function SummaryCard({ label, value }: { label: string; value: number }) {
+type Tone = 'accent' | 'success' | 'muted';
+
+function SummaryCard({ label, value, tone = 'muted' }: { label: string; value: number; tone?: Tone }) {
+  const toneColors: Record<Tone, { bg: string; text: string }> = {
+    accent: { bg: 'rgba(56, 189, 248, 0.1)', text: tokens.colors.accent },
+    success: { bg: 'rgba(34,197,94,0.12)', text: tokens.colors.success },
+    muted: { bg: 'rgba(255,255,255,0.04)', text: tokens.colors.textPrimary },
+  };
   return (
-    <div
+    <Card
+      contentGap="0.35rem"
       style={{
-        padding: '1rem',
-        borderRadius: '8px',
-        border: '1px solid #ddd',
-        minWidth: '180px',
+        background: `linear-gradient(180deg, ${toneColors[tone].bg}, ${tokens.colors.bgElevated})`,
+        borderColor: tokens.colors.borderSoft,
       }}
     >
-      <div style={{ fontSize: '0.85rem', color: '#666' }}>{label}</div>
-      <div style={{ fontSize: '1.4rem', fontWeight: 600 }}>{value.toFixed(2)}</div>
-    </div>
+      <div style={{ fontSize: '0.9rem', color: tokens.colors.textMuted }}>{label}</div>
+      <div style={{ fontSize: '1.55rem', fontWeight: 700, color: toneColors[tone].text }}>{value.toFixed(2)}</div>
+    </Card>
   );
 }
 
@@ -89,20 +137,25 @@ function BudgetCard({ item }: { item: BudgetVsActual }) {
   return (
     <div
       style={{
-        padding: '0.75rem',
-        borderRadius: '8px',
-        border: '1px solid #ddd',
-        background: overBudget ? '#fee2e2' : '#ecfeff',
+        padding: '0.9rem',
+        borderRadius: tokens.radii.md,
+        border: `1px solid ${overBudget ? 'rgba(239,68,68,0.5)' : tokens.colors.borderSoft}`,
+        background: overBudget ? 'rgba(239,68,68,0.07)' : 'rgba(34,197,94,0.04)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.25rem',
       }}
     >
-      <div style={{ fontWeight: 600 }}>{item.categoryName}</div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.25rem' }}>
+      <div style={{ fontWeight: 700 }}>{item.categoryName}</div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', color: tokens.colors.textMuted }}>
         <span>Budget</span>
         <span>{item.budgetAmount.toFixed(2)}</span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
         <span>Actual</span>
-        <span style={{ color: overBudget ? '#b91c1c' : '#166534' }}>{item.actualAmount.toFixed(2)}</span>
+        <span style={{ color: overBudget ? tokens.colors.danger : tokens.colors.success }}>
+          {item.actualAmount.toFixed(2)}
+        </span>
       </div>
     </div>
   );

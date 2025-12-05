@@ -5,7 +5,15 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import rooty.finance.financebackend.api.dto.RecurringRuleDto;
 import rooty.finance.financebackend.api.dto.TransactionDto;
-import rooty.finance.financebackend.domain.*;
+import rooty.finance.financebackend.domain.Account;
+import rooty.finance.financebackend.domain.Category;
+import rooty.finance.financebackend.domain.AccountRepository;
+import rooty.finance.financebackend.domain.CategoryRepository;
+import rooty.finance.financebackend.domain.RecurringRuleRepository;
+import rooty.finance.financebackend.domain.RecurringRule;
+import rooty.finance.financebackend.domain.Transaction;
+import rooty.finance.financebackend.domain.TransactionRepository;
+import rooty.finance.financebackend.service.RecurringScheduleCalculator;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -68,7 +76,12 @@ public class RecurringRuleController {
                 .findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
-        LocalDate nextDate = nextOccurrenceAfterToday(rule);
+        LocalDate nextDate;
+        try {
+            nextDate = RecurringScheduleCalculator.nextOccurrenceAfter(LocalDate.now(), rule.getStartDate(), rule.getPeriod());
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
+        }
         if (rule.getEndDate() != null && nextDate.isAfter(rule.getEndDate())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No future occurrences for this rule");
         }
@@ -99,36 +112,6 @@ public class RecurringRuleController {
                 .build();
 
         return DtoMapper.toDto(transactionRepository.save(transaction));
-    }
-
-    private LocalDate nextOccurrenceAfterToday(RecurringRule rule) {
-        LocalDate start = rule.getStartDate();
-        if (start == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Recurring rule startDate is required");
-        }
-        LocalDate candidate = start;
-        LocalDate today = LocalDate.now();
-        int guard = 0;
-        while (!candidate.isAfter(today) && guard < 500) {
-            candidate = advance(candidate, rule.getPeriod());
-            guard++;
-        }
-        if (guard >= 500) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid recurring rule period");
-        }
-        return candidate;
-    }
-
-    private LocalDate advance(LocalDate date, String period) {
-        if (period == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Recurring rule period is required");
-        }
-        return switch (period.toUpperCase()) {
-            case "WEEKLY" -> date.plusWeeks(1);
-            case "MONTHLY" -> date.plusMonths(1);
-            case "YEARLY" -> date.plusYears(1);
-            default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported period: " + period);
-        };
     }
 
     private BigDecimal normalizeAmount(BigDecimal amount, String direction) {

@@ -27,11 +27,19 @@ Electron shell around the finance backend UI. The app talks to the Spring Boot s
 ## Project structure
 - `electron/main.js` – Electron main process; loads Vite in dev or `dist/index.html` in prod; spawns bundled backend JAR via bundled JRE when packaged and points Spring to a data folder next to the portable EXE.
 - `src/main.tsx` – Bootstraps React into the DOM.
-- `src/App.tsx` – Page shell; switches between Dashboard, Accounts, Transactions, Recurring, Analytics, and Budgets.
+- `src/App.tsx` – Page shell; switches between Dashboard, Accounts, Transactions, Categories, Recurring, Analytics, and Budgets.
 - `src/components/Layout.tsx` – Sidebar layout and navigation; chart components under `src/components/charts/`.
-- `src/pages/` – dashboard, accounts, transactions, recurring rules, analytics (charts), budgets.
+- `src/components/ui/` – shared UI primitives (Page, Card, Button, Modal, FormField) driven by `src/theme.ts`.
+- `src/components/transactions/` – Quick add transaction form used on Dashboard and Transactions.
+- `src/pages/` – dashboard, accounts, transactions, categories, recurring rules, budgets, analytics (charts).
 - `src/api/` – `config.ts` (base URL), `types.ts` (DTOs), `client.ts` (fetch helpers for backend endpoints).
 - `public/` – static assets bundled by Vite.
+
+## UI/design system
+- Theme tokens in `src/theme.ts` (colors, radii, shadows).
+- Global dark styles in `src/index.css`.
+- Combined guide + flows: `UI.md` (components, navigation, patterns, user flows, and cues).
+- User-facing walkthrough: `USER_GUIDE.md` (adding transactions, categories, recurring rules, budgets).
 
 ## Portable runtime notes (Windows)
 - The packaged EXE looks for `resources/jre/bin/java.exe`; if missing, it falls back to system `java`.

@@ -8,6 +8,7 @@ import rooty.finance.financebackend.api.dto.BudgetVsActualDto;
 import rooty.finance.financebackend.api.dto.CategoryAmountDto;
 import rooty.finance.financebackend.api.dto.MonthSummaryDto;
 import rooty.finance.financebackend.api.dto.NetWorthPointDto;
+import rooty.finance.financebackend.api.dto.RecurringCostSummaryDto;
 import rooty.finance.financebackend.service.AnalyticsService;
 
 import java.time.LocalDate;
@@ -43,5 +44,10 @@ public class AnalyticsController {
     @GetMapping("/budget-vs-actual")
     public List<BudgetVsActualDto> getBudgetVsActual(@RequestParam int year, @RequestParam int month) {
         return analyticsService.getBudgetVsActual(YearMonth.of(year, month));
+    }
+
+    @GetMapping("/recurring-costs")
+    public RecurringCostSummaryDto getRecurringCosts() {
+        return analyticsService.getRecurringCostSummary(LocalDate.now());
     }
 }

@@ -11,6 +11,7 @@ This repo contains two modules:
 ## One-shot build (backend + desktop)
 - From repo root: `bash build-all.sh`
 - Produces backend JAR under `finance-backend/target/` then packages the Electron desktop bundle to `finance-desktop/dist/`.
+- Optional version override for the desktop artifact: `APP_VERSION=0.1.0 bash build-all.sh` (otherwise the version in `finance-desktop/package.json` is used).
 
 ## Backend (finance-backend)
 - Build/package: `cd finance-backend && ./mvnw clean package`

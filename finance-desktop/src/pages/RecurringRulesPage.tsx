@@ -73,9 +73,14 @@ export function RecurringRulesPage() {
   const openEdit = (rule: RecurringRule) => {
     setEditingRule(rule);
     setForm({
-      ...rule,
-      endDate: rule.endDate ?? '',
+      accountId: rule.accountId,
+      categoryId: rule.categoryId,
       amount: rule.amount.toString(),
+      direction: rule.direction,
+      period: rule.period,
+      startDate: rule.startDate,
+      endDate: rule.endDate ?? '',
+      autoPost: rule.autoPost,
       note: rule.note ?? '',
     });
   };
@@ -97,9 +102,14 @@ export function RecurringRulesPage() {
     }
 
     const payload = {
-      ...form,
+      accountId: form.accountId,
+      categoryId: form.categoryId,
       amount: parsedAmount,
+      direction: form.direction,
+      period: form.period,
+      startDate: form.startDate,
       endDate: form.endDate || null,
+      autoPost: form.autoPost,
       note: form.note.trim() || null,
     };
 

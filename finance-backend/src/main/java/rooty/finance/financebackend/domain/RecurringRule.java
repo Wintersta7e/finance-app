@@ -33,5 +33,6 @@ public class RecurringRule {
 
     private boolean autoPost;
 
+    @Column(length = 500)
     private String note;
 }

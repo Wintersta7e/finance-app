@@ -8,6 +8,10 @@ This repo contains two modules:
 - Node 20+
 - Java 21 (for building the backend; packaged desktop can bundle its own JRE)
 
+## One-shot build (backend + desktop)
+- From repo root: `bash build-all.sh`
+- Produces backend JAR under `finance-backend/target/` then packages the Electron desktop bundle to `finance-desktop/dist/`.
+
 ## Backend (finance-backend)
 - Build/package: `cd finance-backend && ./mvnw clean package`
 - Run in dev: `./mvnw spring-boot:run`

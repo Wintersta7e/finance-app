@@ -112,7 +112,7 @@ public class RecurringRuleController {
                 .type(type)
                 .account(account)
                 .category(category)
-                .notes(null)
+                .notes(rule.getNote())
                 .recurringRuleId(rule.getId())
                 .build();
 

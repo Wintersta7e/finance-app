@@ -32,4 +32,6 @@ public class RecurringRule {
     private LocalDate endDate;
 
     private boolean autoPost;
+
+    private String note;
 }

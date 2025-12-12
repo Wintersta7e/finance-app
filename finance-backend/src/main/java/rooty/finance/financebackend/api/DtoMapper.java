@@ -100,7 +100,8 @@ public final class DtoMapper {
                 rule.getPeriod(),
                 rule.getStartDate(),
                 rule.getEndDate(),
-                rule.isAutoPost());
+                rule.isAutoPost(),
+                rule.getNote());
     }
 
     public static RecurringRule toEntity(RecurringRuleDto dto) {
@@ -114,6 +115,7 @@ public final class DtoMapper {
                 .startDate(dto.startDate())
                 .endDate(dto.endDate())
                 .autoPost(dto.autoPost())
+                .note(dto.note())
                 .build();
     }
 
@@ -126,6 +128,7 @@ public final class DtoMapper {
         rule.setStartDate(dto.startDate());
         rule.setEndDate(dto.endDate());
         rule.setAutoPost(dto.autoPost());
+        rule.setNote(dto.note());
     }
 
     public static AppSettingsDto toDto(AppSettings settings) {

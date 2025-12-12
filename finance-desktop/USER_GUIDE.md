@@ -27,7 +27,7 @@ What you can do in the Finance Desktop app and how to do it.
 
 ## Recurring rules
 - Use for repeating DAILY / WEEKLY / MONTHLY / YEARLY items; for one-off entries, use the transaction form.
-- Add: click “+ Add rule”, choose account, category (or create one inline), amount, direction, period, start date, optional end date, and auto-post flag; Save.
+- Add: click “+ Add rule”, choose account, category (or create one inline), amount, direction, period, start date, optional end date, note, and auto-post flag; Save.
 - Edit: click “Edit” on a rule, adjust values, Save.
 - Delete: click “Delete” (confirmation required).
 - Generate next occurrence: click “Generate”; the app creates the next dated transaction based on the rule. Errors (e.g., no future occurrences) show inline.

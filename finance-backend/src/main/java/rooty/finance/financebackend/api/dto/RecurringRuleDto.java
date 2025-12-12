@@ -13,5 +13,6 @@ public record RecurringRuleDto(
         RecurringPeriod period,
         LocalDate startDate,
         LocalDate endDate,
-        boolean autoPost) {
+        boolean autoPost,
+        String note) {
 }

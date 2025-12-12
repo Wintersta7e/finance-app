@@ -9,7 +9,11 @@ import { Page } from '../components/ui/Page';
 import { useCategories } from '../hooks/useCategories';
 import { tokens } from '../theme';
 
-type RuleForm = Omit<RecurringRule, 'id' | 'amount' | 'categoryId'> & { amount: string; categoryId: number | null };
+type RuleForm = Omit<RecurringRule, 'id' | 'amount' | 'categoryId' | 'note'> & {
+  amount: string;
+  categoryId: number | null;
+  note: string;
+};
 type CategoryDraft = Omit<Category, 'id'>;
 
 const ADD_NEW_CATEGORY_VALUE = '__add_new__';
@@ -24,6 +28,7 @@ function buildEmptyForm(accounts: Account[], categories: Category[]): RuleForm {
     startDate: new Date().toISOString().slice(0, 10),
     endDate: '',
     autoPost: false,
+    note: '',
   };
 }
 
@@ -71,6 +76,7 @@ export function RecurringRulesPage() {
       ...rule,
       endDate: rule.endDate ?? '',
       amount: rule.amount.toString(),
+      note: rule.note ?? '',
     });
   };
 
@@ -94,6 +100,7 @@ export function RecurringRulesPage() {
       ...form,
       amount: parsedAmount,
       endDate: form.endDate || null,
+      note: form.note.trim() || null,
     };
 
     setSaving(true);
@@ -176,10 +183,10 @@ export function RecurringRulesPage() {
         {!loading && rules.length === 0 && <span style={{ color: tokens.colors.textMuted }}>No recurring rules yet.</span>}
         {rules.length > 0 && (
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ minWidth: '920px' }}>
+            <table style={{ minWidth: '1020px' }}>
               <thead>
                 <tr>
-                  {['Account', 'Category', 'Amount', 'Direction', 'Period', 'Start', 'End', 'Auto-post', 'Actions'].map((header) => (
+                  {['Account', 'Category', 'Amount', 'Direction', 'Period', 'Start', 'End', 'Note', 'Auto-post', 'Actions'].map((header) => (
                     <th key={header}>{header}</th>
                   ))}
                 </tr>
@@ -194,6 +201,7 @@ export function RecurringRulesPage() {
                     <td>{rule.period}</td>
                     <td>{rule.startDate}</td>
                     <td>{rule.endDate ?? '—'}</td>
+                    <td>{rule.note || '—'}</td>
                     <td>{rule.autoPost ? 'Yes' : 'No'}</td>
                     <td>
                       <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
@@ -295,6 +303,16 @@ export function RecurringRulesPage() {
 
             <FormField label="End date (optional)">
               <input type="date" value={form.endDate ?? ''} onChange={(e) => setForm({ ...form, endDate: e.target.value })} />
+            </FormField>
+
+            <FormField label="Note (optional)">
+              <textarea
+                value={form.note}
+                onChange={(e) => setForm({ ...form, note: e.target.value })}
+                rows={2}
+                maxLength={200}
+                placeholder="e.g., Rent for downtown apartment"
+              />
             </FormField>
 
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: tokens.colors.textMuted, fontWeight: 600 }}>

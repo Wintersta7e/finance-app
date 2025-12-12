@@ -122,7 +122,7 @@ public class RecurringRuleAutoPostService {
                 .type(type)
                 .account(account)
                 .category(category)
-                .notes(null)
+                .notes(rule.getNote())
                 .recurringRuleId(rule.getId())
                 .build();
     }

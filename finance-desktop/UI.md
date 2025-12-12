@@ -43,7 +43,7 @@ Unified guide to the desktop UI layer: layout, components, flows, and visual sys
 - **Manage categories**: Categories page + inline creation from category dropdowns (transactions, recurring rules, budgets).
 - **Recurring rules**: DAILY/WEEKLY/MONTHLY/YEARLY periods; amount editable; generate-next creates the next dated transaction with end-date guard.
 - **Budgets**: Monthly budgets per category; inline category creation available.
-- **Analytics**: Charts (net worth, category breakdown, savings) refresh after data changes via shared refresh token.
+- **Analytics**: Charts (net worth, category breakdown, savings) refresh after data changes via shared refresh token; recurring costs card shows monthly total of active recurring expenses.
 
 ## Typography & cues
 - Title sizes: App title ~26px bold; section titles ~20px semibold; card labels ~14px muted; values ~18px semibold.

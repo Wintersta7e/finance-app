@@ -43,6 +43,7 @@ What you can do in the Finance Desktop app and how to do it.
 - Net worth trend: last six months line chart.
 - Category breakdown: current-month expenses by category (pie).
 - Savings per month: last six months bar chart.
+- Recurring costs: monthly total of all active recurring expense rules (includes rules starting later in the current month).
 
 ## Theme and UI cues
 - Dark theme with clear hierarchy: titles > section headers > card labels.

@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import rooty.finance.financebackend.api.dto.TransactionDto;
 import rooty.finance.financebackend.domain.*;
+import rooty.finance.financebackend.service.RecurringRuleAutoPostService;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -16,18 +17,22 @@ public class TransactionController {
     private final TransactionRepository transactionRepository;
     private final AccountRepository accountRepository;
     private final CategoryRepository categoryRepository;
+    private final RecurringRuleAutoPostService autoPostService;
 
     public TransactionController(
             TransactionRepository transactionRepository,
             AccountRepository accountRepository,
-            CategoryRepository categoryRepository) {
+            CategoryRepository categoryRepository,
+            RecurringRuleAutoPostService autoPostService) {
         this.transactionRepository = transactionRepository;
         this.accountRepository = accountRepository;
         this.categoryRepository = categoryRepository;
+        this.autoPostService = autoPostService;
     }
 
     @GetMapping
     public List<TransactionDto> list(@RequestParam("from") LocalDate from, @RequestParam("to") LocalDate to) {
+        autoPostService.autoPostDueTransactions();
         return transactionRepository.findByDateBetween(from, to).stream()
                 .map(DtoMapper::toDto)
                 .toList();

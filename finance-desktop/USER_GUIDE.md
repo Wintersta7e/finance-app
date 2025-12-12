@@ -31,6 +31,7 @@ What you can do in the Finance Desktop app and how to do it.
 - Edit: click “Edit” on a rule, adjust values, Save.
 - Delete: click “Delete” (confirmation required).
 - Generate next occurrence: click “Generate”; the app creates the next dated transaction based on the rule. Errors (e.g., no future occurrences) show inline.
+- Auto-post: when enabled, the backend creates each due occurrence automatically (catching up for missed days) so they appear in transactions/analytics without manual Generate.
 
 ## Budgets
 - Set spending limits per category; create a category inline if you need a new one.

@@ -27,7 +27,7 @@ Electron shell around the finance backend UI. The app talks to the Spring Boot s
 ## Project structure
 - `electron/main.js` – Electron main process; loads Vite in dev or `dist/index.html` in prod; spawns bundled backend JAR via bundled JRE when packaged and points Spring to a data folder next to the portable EXE.
 - `src/main.tsx` – Bootstraps React into the DOM.
-- `src/App.tsx` – Page shell; switches between Dashboard, Accounts, Transactions, Categories, Recurring, Analytics, and Budgets.
+- `src/App.tsx` – Page shell; switches between Dashboard, Accounts, Transactions, Categories, Recurring, Analytics (charts + recurring costs), and Budgets.
 - `src/components/Layout.tsx` – Sidebar layout and navigation; chart components under `src/components/charts/`.
 - `src/components/ui/` – shared UI primitives (Page, Card, Button, Modal, FormField) driven by `src/theme.ts`.
 - `src/components/transactions/` – Quick add transaction form used on Dashboard and Transactions.

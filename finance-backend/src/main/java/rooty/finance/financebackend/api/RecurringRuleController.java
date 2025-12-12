@@ -13,6 +13,7 @@ import rooty.finance.financebackend.domain.RecurringRuleRepository;
 import rooty.finance.financebackend.domain.RecurringRule;
 import rooty.finance.financebackend.domain.Transaction;
 import rooty.finance.financebackend.domain.TransactionRepository;
+import rooty.finance.financebackend.service.RecurringRuleAutoPostService;
 import rooty.finance.financebackend.service.RecurringScheduleCalculator;
 
 import java.math.BigDecimal;
@@ -27,20 +28,24 @@ public class RecurringRuleController {
     private final AccountRepository accountRepository;
     private final CategoryRepository categoryRepository;
     private final TransactionRepository transactionRepository;
+    private final RecurringRuleAutoPostService autoPostService;
 
     public RecurringRuleController(
             RecurringRuleRepository recurringRuleRepository,
             AccountRepository accountRepository,
             CategoryRepository categoryRepository,
-            TransactionRepository transactionRepository) {
+            TransactionRepository transactionRepository,
+            RecurringRuleAutoPostService autoPostService) {
         this.recurringRuleRepository = recurringRuleRepository;
         this.accountRepository = accountRepository;
         this.categoryRepository = categoryRepository;
         this.transactionRepository = transactionRepository;
+        this.autoPostService = autoPostService;
     }
 
     @GetMapping
     public List<RecurringRuleDto> list() {
+        autoPostService.autoPostDueTransactions();
         return recurringRuleRepository.findAll().stream().map(DtoMapper::toDto).toList();
     }
 

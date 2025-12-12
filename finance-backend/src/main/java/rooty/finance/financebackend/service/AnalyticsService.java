@@ -23,19 +23,23 @@ public class AnalyticsService {
     private final AccountRepository accountRepository;
     private final BudgetRepository budgetRepository;
     private final CategoryRepository categoryRepository;
+    private final RecurringRuleAutoPostService autoPostService;
 
     public AnalyticsService(
             TransactionRepository transactionRepository,
             AccountRepository accountRepository,
             BudgetRepository budgetRepository,
-            CategoryRepository categoryRepository) {
+            CategoryRepository categoryRepository,
+            RecurringRuleAutoPostService autoPostService) {
         this.transactionRepository = transactionRepository;
         this.accountRepository = accountRepository;
         this.budgetRepository = budgetRepository;
         this.categoryRepository = categoryRepository;
+        this.autoPostService = autoPostService;
     }
 
     public MonthSummaryDto getMonthSummary(int year, int month) {
+        autoPostService.autoPostDueTransactions();
         LocalDate start = LocalDate.of(year, month, 1);
         LocalDate end = start.with(TemporalAdjusters.lastDayOfMonth());
         List<Transaction> transactions = transactionRepository.findByDateBetween(start, end);
@@ -67,6 +71,7 @@ public class AnalyticsService {
     }
 
     public List<CategoryAmountDto> getCategoryBreakdown(YearMonth month) {
+        autoPostService.autoPostDueTransactions();
         LocalDate start = month.atDay(1);
         LocalDate end = month.atEndOfMonth();
         List<Transaction> transactions = transactionRepository.findByDateBetween(start, end);
@@ -92,6 +97,7 @@ public class AnalyticsService {
     }
 
     public List<NetWorthPointDto> getNetWorthTrend(LocalDate from, LocalDate to) {
+        autoPostService.autoPostDueTransactions();
         List<NetWorthPointDto> points = new ArrayList<>();
         LocalDate cursor = from;
         while (!cursor.isAfter(to)) {
@@ -102,6 +108,7 @@ public class AnalyticsService {
     }
 
     public List<BudgetVsActualDto> getBudgetVsActual(YearMonth month) {
+        autoPostService.autoPostDueTransactions();
         LocalDate start = month.atDay(1);
         LocalDate end = month.atEndOfMonth();
 

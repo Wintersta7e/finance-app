@@ -5,9 +5,11 @@ import rooty.finance.financebackend.api.dto.BudgetVsActualDto;
 import rooty.finance.financebackend.api.dto.CategoryAmountDto;
 import rooty.finance.financebackend.api.dto.MonthSummaryDto;
 import rooty.finance.financebackend.api.dto.NetWorthPointDto;
+import rooty.finance.financebackend.api.dto.RecurringCostSummaryDto;
 import rooty.finance.financebackend.domain.*;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.temporal.TemporalAdjusters;
@@ -24,18 +26,21 @@ public class AnalyticsService {
     private final BudgetRepository budgetRepository;
     private final CategoryRepository categoryRepository;
     private final RecurringRuleAutoPostService autoPostService;
+    private final RecurringRuleRepository recurringRuleRepository;
 
     public AnalyticsService(
             TransactionRepository transactionRepository,
             AccountRepository accountRepository,
             BudgetRepository budgetRepository,
             CategoryRepository categoryRepository,
-            RecurringRuleAutoPostService autoPostService) {
+            RecurringRuleAutoPostService autoPostService,
+            RecurringRuleRepository recurringRuleRepository) {
         this.transactionRepository = transactionRepository;
         this.accountRepository = accountRepository;
         this.budgetRepository = budgetRepository;
         this.categoryRepository = categoryRepository;
         this.autoPostService = autoPostService;
+        this.recurringRuleRepository = recurringRuleRepository;
     }
 
     public MonthSummaryDto getMonthSummary(int year, int month) {
@@ -140,6 +145,59 @@ public class AnalyticsService {
         }
 
         return result;
+    }
+
+    public RecurringCostSummaryDto getRecurringCostSummary(LocalDate referenceDate) {
+        LocalDate today = referenceDate != null ? referenceDate : LocalDate.now();
+        BigDecimal monthlyTotal = BigDecimal.ZERO;
+
+        for (RecurringRule rule : recurringRuleRepository.findAll()) {
+            if (!isExpenseRule(rule)) {
+                continue;
+            }
+            if (!isRuleActive(rule, today)) {
+                continue;
+            }
+            monthlyTotal = monthlyTotal.add(monthlyEquivalent(rule.getAmount(), rule.getPeriod()));
+        }
+
+        return new RecurringCostSummaryDto(monthlyTotal);
+    }
+
+    private boolean isExpenseRule(RecurringRule rule) {
+        return rule != null && "EXPENSE".equalsIgnoreCase(rule.getDirection());
+    }
+
+    private boolean isRuleActive(RecurringRule rule, LocalDate today) {
+        if (rule == null) {
+            return false;
+        }
+        LocalDate start = rule.getStartDate();
+        LocalDate end = rule.getEndDate();
+        LocalDate monthStart = today.withDayOfMonth(1);
+        LocalDate monthEnd = today.with(TemporalAdjusters.lastDayOfMonth());
+        // Include rules that start later this month; exclude only if start is after the current month.
+        if (start != null && start.isAfter(monthEnd)) {
+            return false;
+        }
+        // Exclude rules that ended before this month began.
+        if (end != null && end.isBefore(monthStart)) {
+            return false;
+        }
+        return true;
+    }
+
+    private BigDecimal monthlyEquivalent(BigDecimal amount, RecurringPeriod period) {
+        if (amount == null || period == null) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal absolute = amount.abs();
+        return switch (period) {
+            case DAILY -> absolute.multiply(BigDecimal.valueOf(30));
+            case WEEKLY -> absolute.multiply(BigDecimal.valueOf(4));
+            case MONTHLY -> absolute;
+            case YEARLY -> absolute.divide(BigDecimal.valueOf(12), 2, RoundingMode.HALF_UP);
+        };
     }
 
     private boolean isActiveForMonth(Budget budget, LocalDate monthStart, LocalDate monthEnd) {

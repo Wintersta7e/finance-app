@@ -80,3 +80,7 @@ export interface BudgetVsActual {
   budgetAmount: number;
   actualAmount: number;
 }
+
+export interface RecurringCosts {
+  monthlyTotal: number;
+}

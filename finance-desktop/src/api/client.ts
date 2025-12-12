@@ -166,4 +166,8 @@ export const api = {
     const params = new URLSearchParams({ year: String(year), month: String(month) });
     return request<BudgetVsActual[]>(`/analytics/budget-vs-actual?${params.toString()}`);
   },
+
+  getRecurringCosts() {
+    return request<import('./types').RecurringCosts>('/analytics/recurring-costs');
+  },
 };

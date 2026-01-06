@@ -1,7 +1,7 @@
 {
   "name": "finance-desktop",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.1.0",
   "description": "Finance desktop app with embedded backend",
   "main": "electron/main.js",
   "scripts": {

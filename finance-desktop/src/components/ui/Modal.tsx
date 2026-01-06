@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react';
+import { type ReactNode, useEffect, useRef } from 'react';
 import { tokens } from '../../theme';
 import { Button } from './Button';
 
@@ -9,9 +9,25 @@ interface ModalProps {
   children: ReactNode;
   footer?: ReactNode;
   width?: number | string;
+  /** Higher z-index for nested modals (default: 50, use 60 for nested) */
+  zIndex?: number;
 }
 
-export function Modal({ title, open, onClose, children, footer, width = 480 }: ModalProps) {
+export function Modal({ title, open, onClose, children, footer, width = 480, zIndex = 50 }: ModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  // Auto-focus first focusable element when modal opens
+  useEffect(() => {
+    if (!open || !dialogRef.current) return;
+
+    const focusableSelector = 'input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled])';
+    const firstFocusable = dialogRef.current.querySelector<HTMLElement>(focusableSelector);
+    if (firstFocusable) {
+      // Small delay to ensure DOM is ready
+      requestAnimationFrame(() => firstFocusable.focus());
+    }
+  }, [open]);
+
   if (!open) return null;
 
   return (
@@ -27,10 +43,11 @@ export function Modal({ title, open, onClose, children, footer, width = 480 }: M
         alignItems: 'center',
         justifyContent: 'center',
         padding: '1.5rem',
-        zIndex: 50,
+        zIndex,
       }}
     >
       <div
+        ref={dialogRef}
         onClick={(e) => e.stopPropagation()}
         style={{
           background: tokens.colors.bgElevated,

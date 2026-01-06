@@ -101,7 +101,8 @@ public final class DtoMapper {
                 rule.getStartDate(),
                 rule.getEndDate(),
                 rule.isAutoPost(),
-                rule.getNote());
+                rule.getNote(),
+                rule.getNextOccurrence());
     }
 
     public static RecurringRule toEntity(RecurringRuleDto dto) {
@@ -116,6 +117,7 @@ public final class DtoMapper {
                 .endDate(dto.endDate())
                 .autoPost(dto.autoPost())
                 .note(dto.note())
+                .nextOccurrence(dto.startDate())
                 .build();
     }
 

@@ -16,7 +16,6 @@ import rooty.finance.financebackend.domain.TransactionRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class RecurringRuleAutoPostService {
@@ -67,7 +66,7 @@ public class RecurringRuleAutoPostService {
             throw new IllegalStateException("Recurring rule period is required");
         }
 
-        LocalDate nextDate = determineNextDate(rule, today);
+        LocalDate nextDate = determineNextDate(rule);
         if (nextDate == null) {
             return 0;
         }
@@ -82,19 +81,22 @@ public class RecurringRuleAutoPostService {
             created++;
             nextDate = RecurringScheduleCalculator.computeNextDate(nextDate, rule.getPeriod());
         }
+
+        // Update nextOccurrence on the rule for future runs
+        if (created > 0) {
+            rule.setNextOccurrence(nextDate);
+            recurringRuleRepository.save(rule);
+        }
+
         return created;
     }
 
-    private LocalDate determineNextDate(RecurringRule rule, LocalDate today) {
-        Optional<Transaction> last = transactionRepository.findTopByRecurringRuleIdAndDateLessThanEqualOrderByDateDesc(
-                rule.getId(), today);
-        if (last.isPresent()) {
-            LocalDate lastDate = last.get().getDate();
-            if (lastDate == null) {
-                return null;
-            }
-            return RecurringScheduleCalculator.computeNextDate(lastDate, rule.getPeriod());
+    private LocalDate determineNextDate(RecurringRule rule) {
+        // Use the stored nextOccurrence if available
+        if (rule.getNextOccurrence() != null) {
+            return rule.getNextOccurrence();
         }
+        // Fallback for legacy rules without nextOccurrence: use startDate
         return rule.getStartDate();
     }
 

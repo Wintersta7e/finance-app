@@ -37,6 +37,7 @@ export interface RecurringRule {
   endDate: string | null;
   autoPost: boolean;
   note: string | null;
+  nextOccurrence: string | null;
 }
 
 export interface AppSettings {

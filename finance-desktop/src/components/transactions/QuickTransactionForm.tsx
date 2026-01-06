@@ -206,11 +206,12 @@ export function QuickTransactionForm({ onChange }: QuickTransactionFormProps) {
         <FormField label="Amount">
           <input
             type="text"
-            inputMode="decimal"
             value={form.amount}
-            onChange={(e) => setForm({ ...form, amount: e.target.value })}
+            onChange={(e) => {
+              const val = e.target.value;
+              setForm((prev) => ({ ...prev, amount: val }));
+            }}
             autoComplete="off"
-            pattern="[0-9]*[.,]?[0-9]*"
           />
         </FormField>
 

@@ -14,6 +14,7 @@ interface ModalProps {
 }
 
 export function Modal({ title, open, onClose, children, footer, width = 480, zIndex = 50 }: ModalProps) {
+  const backdropRef = useRef<HTMLDivElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
 
   // Auto-focus first focusable element when modal opens
@@ -28,13 +29,21 @@ export function Modal({ title, open, onClose, children, footer, width = 480, zIn
     }
   }, [open]);
 
+  // Close only when clicking directly on backdrop, not when events bubble up
+  const handleBackdropMouseDown = (e: React.MouseEvent) => {
+    if (e.target === backdropRef.current) {
+      onClose();
+    }
+  };
+
   if (!open) return null;
 
   return (
     <div
+      ref={backdropRef}
       role="dialog"
       aria-modal="true"
-      onClick={onClose}
+      onMouseDown={handleBackdropMouseDown}
       style={{
         position: 'fixed',
         inset: 0,
@@ -48,7 +57,6 @@ export function Modal({ title, open, onClose, children, footer, width = 480, zIn
     >
       <div
         ref={dialogRef}
-        onClick={(e) => e.stopPropagation()}
         style={{
           background: tokens.colors.bgElevated,
           borderRadius: tokens.radii.lg,

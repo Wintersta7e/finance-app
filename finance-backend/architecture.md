@@ -9,7 +9,7 @@ The service is a layered Spring Boot 4 application (Java 21) that exposes a REST
 - **Service (`service.AnalyticsService`)**: Aggregations for month summary, category breakdown, and net-worth trend, reusing repositories.
 - **Domain & persistence (`domain`)**: JPA entities plus Spring Data repositories for all aggregates.
 - **Config (`config.DataInitializer`)**: Seeds default settings, a main account, and baseline categories in an idempotent way at startup.
-- **Config (`config.RecurringRuleMigration`)**: One-time migration that initializes `nextOccurrence` for existing recurring rules on startup.
+- **Config (`config.RecurringRuleMigration`)**: Startup migration that resets `nextOccurrence` to `startDate` for rules needing catch-up, allowing auto-post to create missed transactions.
 
 ## Data and behavior
 - **Entities**: Account, Category, Transaction, RecurringRule, AppSettings. Transaction types are string-based (`INCOME`, `FIXED_COST`, `VARIABLE_EXPENSE`, `TRANSFER`), with optional category for transfers and recurring linkage via `recurringRuleId`.

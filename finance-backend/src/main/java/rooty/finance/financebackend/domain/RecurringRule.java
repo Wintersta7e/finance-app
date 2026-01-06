@@ -35,4 +35,10 @@ public class RecurringRule {
 
     @Column(length = 500)
     private String note;
+
+    /**
+     * The next date when a transaction should be auto-posted.
+     * Updated after each auto-post and when startDate/period changes.
+     */
+    private LocalDate nextOccurrence;
 }

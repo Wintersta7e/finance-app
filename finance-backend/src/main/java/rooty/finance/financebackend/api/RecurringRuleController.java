@@ -54,6 +54,8 @@ public class RecurringRuleController {
     public RecurringRuleDto create(@RequestBody RecurringRuleDto dto) {
         RecurringRule rule = DtoMapper.toEntity(dto);
         rule.setId(null);
+        // Initialize nextOccurrence to startDate (auto-post service will catch up if needed)
+        rule.setNextOccurrence(dto.startDate());
         return DtoMapper.toDto(recurringRuleRepository.save(rule));
     }
 
@@ -62,7 +64,20 @@ public class RecurringRuleController {
         RecurringRule existing = recurringRuleRepository
                 .findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        // Check if schedule-affecting fields changed
+        boolean scheduleChanged = !java.util.Objects.equals(existing.getStartDate(), dto.startDate())
+                || !java.util.Objects.equals(existing.getPeriod(), dto.period());
+
         DtoMapper.updateRecurringRule(existing, dto);
+
+        // Recalculate nextOccurrence if schedule changed
+        if (scheduleChanged && dto.startDate() != null && dto.period() != null) {
+            LocalDate nextOcc = RecurringScheduleCalculator.nextOccurrenceOnOrAfter(
+                    LocalDate.now(), dto.startDate(), dto.period());
+            existing.setNextOccurrence(nextOcc);
+        }
+
         return DtoMapper.toDto(recurringRuleRepository.save(existing));
     }
 

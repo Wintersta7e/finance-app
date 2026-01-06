@@ -43,4 +43,32 @@ public final class RecurringScheduleCalculator {
         }
         return candidate;
     }
+
+    /**
+     * Returns the first occurrence on or after the reference date.
+     * If startDate is on or after reference, returns startDate.
+     * Otherwise, iterates forward until finding the first occurrence >= reference.
+     */
+    public static LocalDate nextOccurrenceOnOrAfter(LocalDate reference, LocalDate startDate, RecurringPeriod period) {
+        if (startDate == null) {
+            throw new IllegalArgumentException("Recurring rule startDate is required");
+        }
+        if (period == null) {
+            throw new IllegalArgumentException("Recurring rule period is required");
+        }
+        LocalDate ref = reference != null ? reference : LocalDate.now();
+        if (!startDate.isBefore(ref)) {
+            return startDate;
+        }
+        LocalDate candidate = startDate;
+        int guard = 0;
+        while (candidate.isBefore(ref) && guard < 500) {
+            candidate = computeNextDate(candidate, period);
+            guard++;
+        }
+        if (guard >= 500) {
+            throw new IllegalArgumentException("Invalid recurring rule period");
+        }
+        return candidate;
+    }
 }

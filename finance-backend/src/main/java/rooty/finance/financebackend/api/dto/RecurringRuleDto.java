@@ -14,5 +14,6 @@ public record RecurringRuleDto(
         LocalDate startDate,
         LocalDate endDate,
         boolean autoPost,
-        String note) {
+        String note,
+        LocalDate nextOccurrence) {
 }

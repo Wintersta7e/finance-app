@@ -98,7 +98,8 @@ class RecurringRuleAutoPostServiceTests {
     }
 
     @Test
-    void autoPostResumesFromLastGeneratedTransaction() {
+    void autoPostResumesFromNextOccurrence() {
+        // Simulate a rule that has already posted up to Feb 1, with nextOccurrence set to Mar 1
         RecurringRule rule = recurringRuleRepository.save(RecurringRule.builder()
                 .accountId(account.getId())
                 .categoryId(null)
@@ -108,8 +109,10 @@ class RecurringRuleAutoPostServiceTests {
                 .startDate(LocalDate.of(2024, 1, 1))
                 .endDate(null)
                 .autoPost(true)
+                .nextOccurrence(LocalDate.of(2024, 3, 1)) // Already posted Jan and Feb
                 .build());
 
+        // Existing transaction from previous auto-post
         transactionRepository.save(Transaction.builder()
                 .date(LocalDate.of(2024, 2, 1))
                 .amount(BigDecimal.valueOf(250))

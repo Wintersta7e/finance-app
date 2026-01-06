@@ -37,28 +37,18 @@ public class RecurringRuleMigration {
         int migrated = 0;
 
         for (RecurringRule rule : rules) {
-            if (rule.getStartDate() != null && rule.getPeriod() != null) {
-                LocalDate correctNextOcc = computeNextOccurrenceForExistingRule(rule);
-                // Reset if null OR if currently set to a future date but startDate allows earlier
-                // This fixes rules where nextOccurrence was incorrectly computed
-                if (rule.getNextOccurrence() == null ||
-                    (correctNextOcc.isBefore(rule.getNextOccurrence()) && !correctNextOcc.isAfter(LocalDate.now()))) {
-                    rule.setNextOccurrence(correctNextOcc);
-                    recurringRuleRepository.save(rule);
-                    migrated++;
-                    log.info("Migrated rule {} nextOccurrence to {}", rule.getId(), correctNextOcc);
-                }
+            // Only migrate rules that don't have nextOccurrence set yet
+            // Once set, the auto-post service and controller manage it
+            if (rule.getNextOccurrence() == null && rule.getStartDate() != null && rule.getPeriod() != null) {
+                rule.setNextOccurrence(rule.getStartDate());
+                recurringRuleRepository.save(rule);
+                migrated++;
+                log.info("Migrated rule {} nextOccurrence to {}", rule.getId(), rule.getStartDate());
             }
         }
 
         if (migrated > 0) {
             log.info("Migrated nextOccurrence for {} recurring rules", migrated);
         }
-    }
-
-    private LocalDate computeNextOccurrenceForExistingRule(RecurringRule rule) {
-        // Set to startDate to allow auto-post service to catch up on any missed occurrences
-        // The auto-post will create transactions for all dates <= today, then advance nextOccurrence
-        return rule.getStartDate();
     }
 }

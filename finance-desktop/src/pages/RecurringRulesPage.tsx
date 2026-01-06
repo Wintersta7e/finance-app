@@ -9,7 +9,7 @@ import { Page } from '../components/ui/Page';
 import { useCategories } from '../hooks/useCategories';
 import { tokens } from '../theme';
 
-type RuleForm = Omit<RecurringRule, 'id' | 'amount' | 'categoryId' | 'note'> & {
+type RuleForm = Omit<RecurringRule, 'id' | 'amount' | 'categoryId' | 'note' | 'nextOccurrence'> & {
   amount: string;
   categoryId: number | null;
   note: string;

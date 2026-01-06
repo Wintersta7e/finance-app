@@ -342,6 +342,7 @@ export function RecurringRulesPage() {
         title="Add category"
         open={categoryModalOpen}
         onClose={() => setCategoryModalOpen(false)}
+        zIndex={60}
         footer={
           <>
             <Button variant="ghost" onClick={() => setCategoryModalOpen(false)}>

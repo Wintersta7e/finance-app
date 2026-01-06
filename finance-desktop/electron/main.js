@@ -97,7 +97,13 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      backgroundThrottling: false,
     },
+  });
+
+  // Fix for Chromium/Electron focus bug on Windows where inputs become unresponsive
+  win.on('focus', () => {
+    win.webContents.focus();
   });
 
   if (isDev) {

@@ -6,6 +6,12 @@ import { CategoriesModule } from './modules/categories/categories.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { TransactionsModule } from './modules/transactions/transactions.module';
 import { RecurringRulesModule } from './modules/recurring-rules/recurring-rules.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { BudgetsModule } from './modules/budgets/budgets.module';
+import { TagsModule } from './modules/tags/tags.module';
+import { PayeesModule } from './modules/payees/payees.module';
+import { GoalsModule } from './modules/goals/goals.module';
+import { ExportModule } from './modules/export/export.module';
 
 @Module({
   imports: [
@@ -16,6 +22,12 @@ import { RecurringRulesModule } from './modules/recurring-rules/recurring-rules.
     SettingsModule,
     TransactionsModule,
     RecurringRulesModule,
+    AnalyticsModule,
+    BudgetsModule,
+    TagsModule,
+    PayeesModule,
+    GoalsModule,
+    ExportModule,
   ],
   controllers: [],
   providers: [],

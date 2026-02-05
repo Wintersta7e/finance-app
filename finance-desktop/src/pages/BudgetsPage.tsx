@@ -120,7 +120,7 @@ export function BudgetsPage() {
       setCategoryModalOpen(true);
       return;
     }
-    setForm({ ...form, categoryId: value ? Number(value) : null });
+    setForm(prev => prev ? { ...prev, categoryId: value ? Number(value) : null } : prev);
   };
 
   const handleCreateCategory = async () => {
@@ -238,7 +238,7 @@ export function BudgetsPage() {
               />
             </FormField>
             <FormField label="Period">
-              <select value={form.period} onChange={(e) => setForm({ ...form, period: e.target.value })}>
+              <select value={form.period} onChange={(e) => setForm(prev => prev ? { ...prev, period: e.target.value } : prev)}>
                 <option value="MONTHLY">MONTHLY</option>
               </select>
             </FormField>
@@ -246,14 +246,14 @@ export function BudgetsPage() {
               <input
                 type="date"
                 value={form.effectiveFrom}
-                onChange={(e) => setForm({ ...form, effectiveFrom: e.target.value })}
+                onChange={(e) => setForm(prev => prev ? { ...prev, effectiveFrom: e.target.value } : prev)}
               />
             </FormField>
             <FormField label="Effective to (optional)">
               <input
                 type="date"
                 value={form.effectiveTo ?? ''}
-                onChange={(e) => setForm({ ...form, effectiveTo: e.target.value })}
+                onChange={(e) => setForm(prev => prev ? { ...prev, effectiveTo: e.target.value } : prev)}
               />
             </FormField>
           </div>
@@ -276,12 +276,12 @@ export function BudgetsPage() {
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           <FormField label="Name">
-            <input value={categoryDraft.name} onChange={(e) => setCategoryDraft({ ...categoryDraft, name: e.target.value })} />
+            <input value={categoryDraft.name} onChange={(e) => setCategoryDraft(prev => ({ ...prev, name: e.target.value }))} />
           </FormField>
           <FormField label="Kind">
             <select
               value={categoryDraft.kind}
-              onChange={(e) => setCategoryDraft({ ...categoryDraft, kind: e.target.value as CategoryDraft['kind'] })}
+              onChange={(e) => setCategoryDraft(prev => ({ ...prev, kind: e.target.value as CategoryDraft['kind'] }))}
             >
               <option value="INCOME">Income</option>
               <option value="EXPENSE">Expense</option>
@@ -291,7 +291,7 @@ export function BudgetsPage() {
             <input
               type="checkbox"
               checked={categoryDraft.fixedCost}
-              onChange={(e) => setCategoryDraft({ ...categoryDraft, fixedCost: e.target.checked })}
+              onChange={(e) => setCategoryDraft(prev => ({ ...prev, fixedCost: e.target.checked }))}
               style={{ width: 18, height: 18 }}
             />
             Fixed cost

@@ -51,11 +51,6 @@ export function DashboardPage({ analyticsRefreshToken, onDataChanged }: Dashboar
   useEffect(() => {
     loadSummary();
     loadBudgets();
-  }, [loadSummary, loadBudgets]);
-
-  useEffect(() => {
-    loadSummary();
-    loadBudgets();
   }, [analyticsRefreshToken, loadSummary, loadBudgets]);
 
   const handleTransactionAdded = () => {

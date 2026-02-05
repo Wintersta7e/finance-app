@@ -9,7 +9,8 @@ The service is a layered Spring Boot 4 application (Java 21) that exposes a REST
 - **Service (`service.AnalyticsService`)**: Aggregations for month summary, category breakdown, and net-worth trend, reusing repositories.
 - **Domain & persistence (`domain`)**: JPA entities plus Spring Data repositories for all aggregates.
 - **Config (`config.DataInitializer`)**: Seeds default settings, a main account, and baseline categories in an idempotent way at startup.
-- **Config (`config.RecurringRuleMigration`)**: Startup migration that resets `nextOccurrence` to `startDate` for rules needing catch-up, allowing auto-post to create missed transactions.
+- **Config (`config.RecurringRuleMigration`)**: One-time idempotent migration that initializes `nextOccurrence` to `startDate` for existing rules lacking this field.
+- **Config (`config.SchemaUpdater`)**: Startup schema migrations for evolving the database structure.
 
 ## Data and behavior
 - **Entities**: Account, Category, Transaction, RecurringRule, AppSettings. Transaction types are string-based (`INCOME`, `FIXED_COST`, `VARIABLE_EXPENSE`, `TRANSFER`), with optional category for transfers and recurring linkage via `recurringRuleId`.
@@ -26,7 +27,7 @@ The service is a layered Spring Boot 4 application (Java 21) that exposes a REST
 
 ## Database and configuration
 - Datasource, JPA, and server settings live in `src/main/resources/application.properties`.
-- H2 console is enabled at `/h2-console`; Hibernate `ddl-auto=update` keeps schema in sync for development.
+- H2 console is available at `/h2-console` when running with `-Dspring.profiles.active=dev`; Hibernate `ddl-auto=update` keeps schema in sync for development.
 
 ## Testing
 - `FinanceBackendApplicationTests` sanity-checks context startup.

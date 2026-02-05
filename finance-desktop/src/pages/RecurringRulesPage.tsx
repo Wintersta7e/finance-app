@@ -154,7 +154,7 @@ export function RecurringRulesPage() {
       setCategoryModalOpen(true);
       return;
     }
-    setForm({ ...form, categoryId: Number(value) });
+    setForm(prev => prev ? { ...prev, categoryId: Number(value) } : prev);
   };
 
   const handleCreateCategory = async () => {
@@ -205,7 +205,7 @@ export function RecurringRulesPage() {
                 {rules.map((rule) => (
                   <tr key={rule.id}>
                     <td>{accountNames.get(rule.accountId) ?? `Account ${rule.accountId}`}</td>
-                    <td>{categoryNames.get(rule.categoryId) ?? `Category ${rule.categoryId}`}</td>
+                    <td>{rule.categoryId != null ? (categoryNames.get(rule.categoryId) ?? `Category ${rule.categoryId}`) : '—'}</td>
                     <td>{rule.amount.toFixed(2)}</td>
                     <td>{rule.direction}</td>
                     <td>{rule.period}</td>
@@ -252,7 +252,7 @@ export function RecurringRulesPage() {
         {form && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <FormField label="Account">
-              <select value={form.accountId} onChange={(e) => setForm({ ...form, accountId: Number(e.target.value) })}>
+              <select value={form.accountId} onChange={(e) => setForm(prev => prev ? { ...prev, accountId: Number(e.target.value) } : prev)}>
                 {accounts.map((a) => (
                   <option key={a.id} value={a.id}>
                     {a.name}
@@ -292,7 +292,7 @@ export function RecurringRulesPage() {
             <FormField label="Direction">
               <select
                 value={form.direction}
-                onChange={(e) => setForm({ ...form, direction: e.target.value as RuleForm['direction'] })}
+                onChange={(e) => setForm(prev => prev ? { ...prev, direction: e.target.value as RuleForm['direction'] } : prev)}
               >
                 <option value="INCOME">INCOME</option>
                 <option value="EXPENSE">EXPENSE</option>
@@ -300,7 +300,7 @@ export function RecurringRulesPage() {
             </FormField>
 
             <FormField label="Period">
-              <select value={form.period} onChange={(e) => setForm({ ...form, period: e.target.value as RuleForm['period'] })}>
+              <select value={form.period} onChange={(e) => setForm(prev => prev ? { ...prev, period: e.target.value as RuleForm['period'] } : prev)}>
                 <option value="DAILY">DAILY</option>
                 <option value="WEEKLY">WEEKLY</option>
                 <option value="MONTHLY">MONTHLY</option>
@@ -309,17 +309,17 @@ export function RecurringRulesPage() {
             </FormField>
 
             <FormField label="Start date">
-              <input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} />
+              <input type="date" value={form.startDate} onChange={(e) => setForm(prev => prev ? { ...prev, startDate: e.target.value } : prev)} />
             </FormField>
 
             <FormField label="End date (optional)">
-              <input type="date" value={form.endDate ?? ''} onChange={(e) => setForm({ ...form, endDate: e.target.value })} />
+              <input type="date" value={form.endDate ?? ''} onChange={(e) => setForm(prev => prev ? { ...prev, endDate: e.target.value } : prev)} />
             </FormField>
 
             <FormField label="Note (optional)">
               <textarea
                 value={form.note}
-                onChange={(e) => setForm({ ...form, note: e.target.value })}
+                onChange={(e) => setForm(prev => prev ? { ...prev, note: e.target.value } : prev)}
                 rows={2}
                 maxLength={200}
                 placeholder="e.g., Rent for downtown apartment"
@@ -330,7 +330,7 @@ export function RecurringRulesPage() {
               <input
                 type="checkbox"
                 checked={form.autoPost}
-                onChange={(e) => setForm({ ...form, autoPost: e.target.checked })}
+                onChange={(e) => setForm(prev => prev ? { ...prev, autoPost: e.target.checked } : prev)}
                 style={{ width: 18, height: 18 }}
               />
               Auto-post
@@ -355,12 +355,12 @@ export function RecurringRulesPage() {
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           <FormField label="Name">
-            <input value={categoryDraft.name} onChange={(e) => setCategoryDraft({ ...categoryDraft, name: e.target.value })} />
+            <input value={categoryDraft.name} onChange={(e) => setCategoryDraft(prev => ({ ...prev, name: e.target.value }))} />
           </FormField>
           <FormField label="Kind">
             <select
               value={categoryDraft.kind}
-              onChange={(e) => setCategoryDraft({ ...categoryDraft, kind: e.target.value as CategoryDraft['kind'] })}
+              onChange={(e) => setCategoryDraft(prev => ({ ...prev, kind: e.target.value as CategoryDraft['kind'] }))}
             >
               <option value="INCOME">Income</option>
               <option value="EXPENSE">Expense</option>
@@ -370,7 +370,7 @@ export function RecurringRulesPage() {
             <input
               type="checkbox"
               checked={categoryDraft.fixedCost}
-              onChange={(e) => setCategoryDraft({ ...categoryDraft, fixedCost: e.target.checked })}
+              onChange={(e) => setCategoryDraft(prev => ({ ...prev, fixedCost: e.target.checked }))}
               style={{ width: 18, height: 18 }}
             />
             Fixed cost

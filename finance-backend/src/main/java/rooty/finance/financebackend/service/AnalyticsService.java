@@ -6,7 +6,17 @@ import rooty.finance.financebackend.api.dto.CategoryAmountDto;
 import rooty.finance.financebackend.api.dto.MonthSummaryDto;
 import rooty.finance.financebackend.api.dto.NetWorthPointDto;
 import rooty.finance.financebackend.api.dto.RecurringCostSummaryDto;
-import rooty.finance.financebackend.domain.*;
+import rooty.finance.financebackend.domain.Account;
+import rooty.finance.financebackend.domain.AccountRepository;
+import rooty.finance.financebackend.domain.Budget;
+import rooty.finance.financebackend.domain.BudgetRepository;
+import rooty.finance.financebackend.domain.Category;
+import rooty.finance.financebackend.domain.CategoryRepository;
+import rooty.finance.financebackend.domain.RecurringPeriod;
+import rooty.finance.financebackend.domain.RecurringRule;
+import rooty.finance.financebackend.domain.RecurringRuleRepository;
+import rooty.finance.financebackend.domain.Transaction;
+import rooty.finance.financebackend.domain.TransactionRepository;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -25,7 +35,6 @@ public class AnalyticsService {
     private final AccountRepository accountRepository;
     private final BudgetRepository budgetRepository;
     private final CategoryRepository categoryRepository;
-    private final RecurringRuleAutoPostService autoPostService;
     private final RecurringRuleRepository recurringRuleRepository;
 
     public AnalyticsService(
@@ -33,18 +42,15 @@ public class AnalyticsService {
             AccountRepository accountRepository,
             BudgetRepository budgetRepository,
             CategoryRepository categoryRepository,
-            RecurringRuleAutoPostService autoPostService,
             RecurringRuleRepository recurringRuleRepository) {
         this.transactionRepository = transactionRepository;
         this.accountRepository = accountRepository;
         this.budgetRepository = budgetRepository;
         this.categoryRepository = categoryRepository;
-        this.autoPostService = autoPostService;
         this.recurringRuleRepository = recurringRuleRepository;
     }
 
     public MonthSummaryDto getMonthSummary(int year, int month) {
-        autoPostService.autoPostDueTransactions();
         LocalDate start = LocalDate.of(year, month, 1);
         LocalDate end = start.with(TemporalAdjusters.lastDayOfMonth());
         List<Transaction> transactions = transactionRepository.findByDateBetween(start, end);
@@ -76,7 +82,6 @@ public class AnalyticsService {
     }
 
     public List<CategoryAmountDto> getCategoryBreakdown(YearMonth month) {
-        autoPostService.autoPostDueTransactions();
         LocalDate start = month.atDay(1);
         LocalDate end = month.atEndOfMonth();
         List<Transaction> transactions = transactionRepository.findByDateBetween(start, end);
@@ -102,7 +107,6 @@ public class AnalyticsService {
     }
 
     public List<NetWorthPointDto> getNetWorthTrend(LocalDate from, LocalDate to) {
-        autoPostService.autoPostDueTransactions();
         List<NetWorthPointDto> points = new ArrayList<>();
         LocalDate cursor = from;
         while (!cursor.isAfter(to)) {
@@ -113,7 +117,6 @@ public class AnalyticsService {
     }
 
     public List<BudgetVsActualDto> getBudgetVsActual(YearMonth month) {
-        autoPostService.autoPostDueTransactions();
         LocalDate start = month.atDay(1);
         LocalDate end = month.atEndOfMonth();
 
@@ -207,17 +210,8 @@ public class AnalyticsService {
     }
 
     private BigDecimal calculateBalanceUpTo(LocalDate dateInclusive) {
-        BigDecimal starting = accountRepository.findAll().stream()
-                .map(Account::getInitialBalance)
-                .filter(v -> v != null)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal movements = transactionRepository.findAll().stream()
-                .filter(tx -> tx.getDate() != null && !tx.getDate().isAfter(dateInclusive))
-                .map(Transaction::getAmount)
-                .filter(v -> v != null)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
+        BigDecimal starting = accountRepository.sumInitialBalances();
+        BigDecimal movements = transactionRepository.sumAmountsUpToDate(dateInclusive);
         return starting.add(movements);
     }
 

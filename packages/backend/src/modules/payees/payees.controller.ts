@@ -10,10 +10,12 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { PayeesService } from './payees.service';
 import { CreatePayeeDto } from './dto/create-payee.dto';
 import { UpdatePayeeDto } from './dto/update-payee.dto';
 
+@ApiTags('Payees')
 @Controller('payees')
 export class PayeesController {
   constructor(private readonly service: PayeesService) {}

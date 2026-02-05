@@ -9,10 +9,12 @@ import {
   HttpStatus,
   Header,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
 import { ExportService, ExportData, ImportMode } from './export.service';
 import { ImportQueryDto } from './dto/import-query.dto';
 
+@ApiTags('Export / Import')
 @Controller()
 export class ExportController {
   constructor(private readonly exportService: ExportService) {}

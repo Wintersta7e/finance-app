@@ -10,10 +10,12 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { RecurringRulesService } from './recurring-rules.service';
 import { CreateRecurringRuleDto } from './dto/create-recurring-rule.dto';
 import { UpdateRecurringRuleDto } from './dto/update-recurring-rule.dto';
 
+@ApiTags('Recurring Rules')
 @Controller('recurring-rules')
 export class RecurringRulesController {
   constructor(private readonly service: RecurringRulesService) {}

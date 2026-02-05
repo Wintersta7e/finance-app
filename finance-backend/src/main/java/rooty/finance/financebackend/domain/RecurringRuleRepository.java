@@ -7,4 +7,8 @@ import java.util.List;
 public interface RecurringRuleRepository extends JpaRepository<RecurringRule, Long> {
 
     List<RecurringRule> findByAutoPostTrue();
+
+    boolean existsByCategoryId(Long categoryId);
+
+    boolean existsByAccountId(Long accountId);
 }

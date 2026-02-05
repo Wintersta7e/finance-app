@@ -1,11 +1,24 @@
 package rooty.finance.financebackend.api;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import rooty.finance.financebackend.api.dto.TransactionDto;
-import rooty.finance.financebackend.domain.*;
-import rooty.finance.financebackend.service.RecurringRuleAutoPostService;
+import rooty.finance.financebackend.domain.Account;
+import rooty.finance.financebackend.domain.AccountRepository;
+import rooty.finance.financebackend.domain.Category;
+import rooty.finance.financebackend.domain.CategoryRepository;
+import rooty.finance.financebackend.domain.Transaction;
+import rooty.finance.financebackend.domain.TransactionRepository;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -17,22 +30,18 @@ public class TransactionController {
     private final TransactionRepository transactionRepository;
     private final AccountRepository accountRepository;
     private final CategoryRepository categoryRepository;
-    private final RecurringRuleAutoPostService autoPostService;
 
     public TransactionController(
             TransactionRepository transactionRepository,
             AccountRepository accountRepository,
-            CategoryRepository categoryRepository,
-            RecurringRuleAutoPostService autoPostService) {
+            CategoryRepository categoryRepository) {
         this.transactionRepository = transactionRepository;
         this.accountRepository = accountRepository;
         this.categoryRepository = categoryRepository;
-        this.autoPostService = autoPostService;
     }
 
     @GetMapping
     public List<TransactionDto> list(@RequestParam("from") LocalDate from, @RequestParam("to") LocalDate to) {
-        autoPostService.autoPostDueTransactions();
         return transactionRepository.findByDateBetween(from, to).stream()
                 .map(DtoMapper::toDto)
                 .toList();

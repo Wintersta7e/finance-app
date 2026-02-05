@@ -106,14 +106,14 @@ export const api = {
     return request<RecurringRule[]>('/recurring-rules');
   },
 
-  createRecurringRule(payload: Omit<RecurringRule, 'id'>) {
+  createRecurringRule(payload: Omit<RecurringRule, 'id' | 'nextOccurrence'>) {
     return request<RecurringRule>('/recurring-rules', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
   },
 
-  updateRecurringRule(id: number, payload: Omit<RecurringRule, 'id'>) {
+  updateRecurringRule(id: number, payload: Omit<RecurringRule, 'id' | 'nextOccurrence'>) {
     return request<RecurringRule>(`/recurring-rules/${id}`, {
       method: 'PUT',
       body: JSON.stringify(payload),

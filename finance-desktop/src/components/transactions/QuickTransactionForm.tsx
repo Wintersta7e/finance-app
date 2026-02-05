@@ -152,7 +152,7 @@ export function QuickTransactionForm({ onChange }: QuickTransactionFormProps) {
         }}
       >
         <FormField label="Account">
-          <select value={form.accountId} onChange={(e) => setForm({ ...form, accountId: Number(e.target.value) })}>
+          <select value={form.accountId} onChange={(e) => setForm(prev => ({ ...prev, accountId: Number(e.target.value) }))}>
             {accounts.map((account) => (
               <option key={account.id} value={account.id}>
                 {account.name}
@@ -163,7 +163,7 @@ export function QuickTransactionForm({ onChange }: QuickTransactionFormProps) {
         </FormField>
 
         <FormField label="Date">
-          <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+          <input type="date" value={form.date} onChange={(e) => setForm(prev => ({ ...prev, date: e.target.value }))} />
         </FormField>
 
         <FormField label="Type">
@@ -216,7 +216,7 @@ export function QuickTransactionForm({ onChange }: QuickTransactionFormProps) {
         </FormField>
 
         <FormField label="Notes">
-          <input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Optional" />
+          <input value={form.notes} onChange={(e) => setForm(prev => ({ ...prev, notes: e.target.value }))} placeholder="Optional" />
         </FormField>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -242,12 +242,12 @@ export function QuickTransactionForm({ onChange }: QuickTransactionFormProps) {
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           <FormField label="Name">
-            <input value={categoryDraft.name} onChange={(e) => setCategoryDraft({ ...categoryDraft, name: e.target.value })} />
+            <input value={categoryDraft.name} onChange={(e) => setCategoryDraft(prev => ({ ...prev, name: e.target.value }))} />
           </FormField>
           <FormField label="Kind">
             <select
               value={categoryDraft.kind}
-              onChange={(e) => setCategoryDraft({ ...categoryDraft, kind: e.target.value as CategoryDraft['kind'] })}
+              onChange={(e) => setCategoryDraft(prev => ({ ...prev, kind: e.target.value as CategoryDraft['kind'] }))}
             >
               <option value="INCOME">Income</option>
               <option value="EXPENSE">Expense</option>
@@ -257,7 +257,7 @@ export function QuickTransactionForm({ onChange }: QuickTransactionFormProps) {
             <input
               type="checkbox"
               checked={categoryDraft.fixedCost}
-              onChange={(e) => setCategoryDraft({ ...categoryDraft, fixedCost: e.target.checked })}
+              onChange={(e) => setCategoryDraft(prev => ({ ...prev, fixedCost: e.target.checked }))}
               style={{ width: 18, height: 18 }}
             />
             Fixed cost

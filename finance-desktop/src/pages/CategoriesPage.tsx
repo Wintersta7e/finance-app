@@ -138,12 +138,12 @@ export function CategoriesPage() {
         {form && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <FormField label="Name">
-              <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+              <input value={form.name} onChange={(e) => setForm(prev => prev ? { ...prev, name: e.target.value } : prev)} />
             </FormField>
             <FormField label="Kind">
               <select
                 value={form.kind}
-                onChange={(e) => setForm({ ...form, kind: e.target.value as CategoryForm['kind'] })}
+                onChange={(e) => setForm(prev => prev ? { ...prev, kind: e.target.value as CategoryForm['kind'] } : prev)}
               >
                 <option value="INCOME">Income</option>
                 <option value="EXPENSE">Expense</option>
@@ -153,7 +153,7 @@ export function CategoriesPage() {
               <input
                 type="checkbox"
                 checked={form.fixedCost}
-                onChange={(e) => setForm({ ...form, fixedCost: e.target.checked })}
+                onChange={(e) => setForm(prev => prev ? { ...prev, fixedCost: e.target.checked } : prev)}
                 style={{ width: 18, height: 18 }}
               />
               Fixed cost

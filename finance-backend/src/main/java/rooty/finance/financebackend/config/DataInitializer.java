@@ -3,7 +3,12 @@ package rooty.finance.financebackend.config;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
-import rooty.finance.financebackend.domain.*;
+import rooty.finance.financebackend.domain.Account;
+import rooty.finance.financebackend.domain.AccountRepository;
+import rooty.finance.financebackend.domain.AppSettings;
+import rooty.finance.financebackend.domain.AppSettingsRepository;
+import rooty.finance.financebackend.domain.Category;
+import rooty.finance.financebackend.domain.CategoryRepository;
 
 import java.math.BigDecimal;
 import java.util.List;

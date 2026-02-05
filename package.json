@@ -1,0 +1,20 @@
+{
+  "name": "finance-app",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:desktop\"",
+    "dev:backend": "npm -w @finance/backend run start:dev",
+    "dev:desktop": "npm -w @finance/desktop run dev:desktop",
+    "build": "npm run build:backend && npm run build:desktop",
+    "build:backend": "npm -w @finance/backend run build",
+    "build:desktop": "npm -w @finance/desktop run build:desktop",
+    "test": "npm -w @finance/backend run test:all",
+    "lint": "npm -w @finance/backend run lint"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}

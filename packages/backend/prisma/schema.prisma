@@ -1,0 +1,154 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id             Int           @id @default(autoincrement())
+  name           String
+  type           String        @default("CHECKING")
+  initialBalance Decimal       @default(0)
+  archived       Boolean       @default(false)
+  deletedAt      DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  transactions   Transaction[]
+  recurringRules RecurringRule[]
+}
+
+model Category {
+  id        Int       @id @default(autoincrement())
+  name      String
+  kind      String
+  fixedCost Boolean   @default(false)
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  transactions   Transaction[]
+  recurringRules RecurringRule[]
+  budgets        Budget[]
+}
+
+model Transaction {
+  id              Int       @id @default(autoincrement())
+  date            DateTime
+  amount          Decimal
+  type            String
+  notes           String?
+  recurringRuleId Int?
+  deletedAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  account    Account   @relation(fields: [accountId], references: [id])
+  accountId  Int
+  category   Category? @relation(fields: [categoryId], references: [id])
+  categoryId Int?
+  payee      Payee?    @relation(fields: [payeeId], references: [id])
+  payeeId    Int?
+  tags       TransactionTag[]
+}
+
+model RecurringRule {
+  id             Int       @id @default(autoincrement())
+  amount         Decimal
+  direction      String
+  period         String
+  startDate      DateTime
+  endDate        DateTime?
+  nextOccurrence DateTime
+  autoPost       Boolean   @default(true)
+  note           String?
+  deletedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  account    Account   @relation(fields: [accountId], references: [id])
+  accountId  Int
+  category   Category? @relation(fields: [categoryId], references: [id])
+  categoryId Int?
+  payee      Payee?    @relation(fields: [payeeId], references: [id])
+  payeeId    Int?
+}
+
+model Budget {
+  id            Int       @id @default(autoincrement())
+  amount        Decimal
+  period        String    @default("MONTHLY")
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  deletedAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  category   Category @relation(fields: [categoryId], references: [id])
+  categoryId Int
+}
+
+model AppSettings {
+  id              Int      @id @default(1)
+  currencyCode    String   @default("EUR")
+  firstDayOfMonth Int      @default(1)
+  firstDayOfWeek  Int      @default(1)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Tag {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  color     String?
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  transactions TransactionTag[]
+}
+
+model TransactionTag {
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  transactionId Int
+  tag           Tag         @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tagId         Int
+
+  @@id([transactionId, tagId])
+}
+
+model Payee {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  notes     String?
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  transactions   Transaction[]
+  recurringRules RecurringRule[]
+}
+
+model SavingsGoal {
+  id            Int       @id @default(autoincrement())
+  name          String
+  targetAmount  Decimal
+  currentAmount Decimal   @default(0)
+  targetDate    DateTime?
+  color         String?
+  deletedAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  entityType String
+  entityId   Int
+  action     String
+  changes    String?
+  timestamp  DateTime @default(now())
+}

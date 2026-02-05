@@ -1,0 +1,3 @@
+export { CreateGoalDto } from './create-goal.dto';
+export { UpdateGoalDto } from './update-goal.dto';
+export { ContributeDto } from './contribute.dto';

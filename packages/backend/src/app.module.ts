@@ -12,6 +12,8 @@ import { TagsModule } from './modules/tags/tags.module';
 import { PayeesModule } from './modules/payees/payees.module';
 import { GoalsModule } from './modules/goals/goals.module';
 import { ExportModule } from './modules/export/export.module';
+import { AuditModule } from './modules/audit/audit.module';
+import { SeedModule } from './modules/seed/seed.module';
 
 @Module({
   imports: [
@@ -28,6 +30,8 @@ import { ExportModule } from './modules/export/export.module';
     PayeesModule,
     GoalsModule,
     ExportModule,
+    AuditModule,
+    SeedModule,
   ],
   controllers: [],
   providers: [],

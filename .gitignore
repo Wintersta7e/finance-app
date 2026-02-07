@@ -1,13 +1,19 @@
-# Backend
-finance-backend/target/
-finance-backend/build/
-finance-backend/.mvn/wrapper/maven-wrapper.jar
-finance-backend/HELP.md
+# Dependencies
+node_modules/
 
-# Frontend
-finance-desktop/node_modules/
-finance-desktop/dist/
-finance-desktop/dist-ssr/
+# Build output
+dist/
+target/
+packages/backend/node_modules_prod/
+coverage/
+
+# Java / Maven
+.mvn/
+*.jar
+*.class
+
+# Package lock files (regenerated from package.json)
+package-lock.json
 
 # Logs
 logs
@@ -39,3 +45,16 @@ lerna-debug.log*
 *.njsproj
 *.sln
 *.sw?
+.claude
+
+# Screenshots
+screenshot.png
+
+# Docs / plans
+docs/
+
+# Project instructions
+CLAUDE.md
+AGENTS.md
+instructions.md
+Plan.md

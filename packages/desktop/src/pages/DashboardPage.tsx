@@ -71,7 +71,7 @@ export function DashboardPage({ analyticsRefreshToken, onDataChanged }: Dashboar
           <SummaryCard label="Income this month" value={summary.totalIncome} tone="accent" />
           <SummaryCard label="Expenses this month" value={summary.fixedCosts + summary.variableExpenses} tone="muted" />
           <SummaryCard label="Savings this month" value={summary.savings} tone="success" />
-          <SummaryCard label="End-of-month balance" value={summary.endOfMonthBalance} tone="muted" />
+          <SummaryCard label="End-of-month balance" value={summary.endBalance} tone="muted" />
         </div>
       )}
 
@@ -128,7 +128,7 @@ function SummaryCard({ label, value, tone = 'muted' }: { label: string; value: n
 }
 
 function BudgetCard({ item }: { item: BudgetVsActual }) {
-  const overBudget = item.actualAmount > item.budgetAmount;
+  const overBudget = item.actual > item.budgeted;
   return (
     <div
       style={{
@@ -144,12 +144,12 @@ function BudgetCard({ item }: { item: BudgetVsActual }) {
       <div style={{ fontWeight: 700 }}>{item.categoryName}</div>
       <div style={{ display: 'flex', justifyContent: 'space-between', color: tokens.colors.textMuted }}>
         <span>Budget</span>
-        <span>{item.budgetAmount.toFixed(2)}</span>
+        <span>{item.budgeted.toFixed(2)}</span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
         <span>Actual</span>
         <span style={{ color: overBudget ? tokens.colors.danger : tokens.colors.success }}>
-          {item.actualAmount.toFixed(2)}
+          {item.actual.toFixed(2)}
         </span>
       </div>
     </div>

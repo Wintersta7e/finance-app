@@ -71,9 +71,10 @@ export const api = {
     });
   },
 
-  getTransactions(from: string, to: string): Promise<Transaction[]> {
-    const params = new URLSearchParams({ from, to });
-    return request<Transaction[]>(`/transactions?${params.toString()}`);
+  async getTransactions(from: string, to: string): Promise<Transaction[]> {
+    const params = new URLSearchParams({ startDate: from, endDate: to, limit: '100' });
+    const result = await request<{ data: Transaction[] }>(`/transactions?${params.toString()}`);
+    return result.data;
   },
 
   createTransaction(payload: Omit<Transaction, 'id'>): Promise<Transaction> {

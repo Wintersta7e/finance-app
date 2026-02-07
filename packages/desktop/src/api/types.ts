@@ -19,7 +19,7 @@ export interface Transaction {
   id: number;
   date: string;
   amount: number;
-  type: 'INCOME' | 'EXPENSE' | 'FIXED_COST' | 'VARIABLE_EXPENSE' | 'TRANSFER';
+  type: 'INCOME' | 'FIXED_COST' | 'VARIABLE_EXPENSE' | 'TRANSFER';
   accountId: number;
   categoryId: number | null;
   notes: string | null;
@@ -52,7 +52,7 @@ export interface MonthSummary {
   fixedCosts: number;
   variableExpenses: number;
   savings: number;
-  endOfMonthBalance: number;
+  endBalance: number;
 }
 
 export interface CategoryAmount {
@@ -63,7 +63,7 @@ export interface CategoryAmount {
 
 export interface NetWorthPoint {
   date: string;
-  value: number;
+  balance: number;
 }
 
 export interface Budget {
@@ -78,8 +78,8 @@ export interface Budget {
 export interface BudgetVsActual {
   categoryId: number;
   categoryName: string;
-  budgetAmount: number;
-  actualAmount: number;
+  budgeted: number;
+  actual: number;
 }
 
 export interface RecurringCosts {

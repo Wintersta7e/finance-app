@@ -10,7 +10,6 @@
     "preview": "vite preview",
     "electron": "cross-env NODE_ENV=development electron ./electron/main.js",
     "electron:prod": "cross-env NODE_ENV=production electron ./electron/main.js",
-    "dev:desktop": "concurrently -k \"npm run dev\" \"wait-on http://localhost:5173 && npm run electron\"",
     "build:backend": "bash ../backend/scripts/prepare-production.sh",
     "build:desktop": "npm run build:backend && npm run build && electron-builder",
     "lint": "eslint ."
@@ -26,7 +25,6 @@
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
-    "concurrently": "^9.0.0",
     "cross-env": "^7.0.3",
     "electron": "^40.1.0",
     "electron-builder": "^26.0.12",
@@ -36,8 +34,7 @@
     "globals": "^16.5.0",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
-    "vite": "^7.2.4",
-    "wait-on": "^8.0.0"
+    "vite": "^7.2.4"
   },
   "build": {
     "appId": "rooty.finance.desktop",

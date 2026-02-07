@@ -9,6 +9,10 @@ finance-desktop/node_modules/
 finance-desktop/dist/
 finance-desktop/dist-ssr/
 
+# Backend (NestJS)
+packages/backend/dist/
+packages/backend/node_modules_prod/
+
 # Logs
 logs
 *.log
@@ -39,3 +43,5 @@ lerna-debug.log*
 *.njsproj
 *.sln
 *.sw?
+.claude
+finance-backend/.mvn

@@ -1,8 +1,8 @@
 # NestJS Backend Rewrite - Session Handoff
 
-> **Last Updated**: 2026-02-05
+> **Last Updated**: 2026-02-07
 > **Branch**: `feature/nestjs-backend`
-> **Tests**: 173 passing
+> **Tests**: 201 passing
 
 ## Project Overview
 
@@ -39,23 +39,26 @@ We're rewriting the Java/Spring finance backend to Node.js/NestJS to simplify th
 - [x] Savings Goals module (CRUD, contributions, progress tracking)
 - [x] Export/Import module (JSON export, CSV transactions, import with replace/merge)
 
-### Remaining Phases
+#### Phase 5: Infrastructure (3 commits)
+- [x] Audit Module (AuditService, AuditController, AuditInterceptor with global auto-logging)
+- [x] Swagger Documentation (`@nestjs/swagger` with @ApiTags on all 13 controllers, available at `/api/docs`)
+- [x] Data Seeding (DataInitializerService: 8 categories, default account, EUR settings)
 
-#### Phase 5: Infrastructure
-- [ ] Task 5.1: Audit Module (audit logging with interceptor)
-- [ ] Task 5.2: Swagger Documentation (`@nestjs/swagger`)
-- [ ] Task 5.3: Data Seeding (DataInitializer equivalent)
+#### Phase 6: Electron Integration (3 commits)
+- [x] Rewritten `electron/main.js` to spawn NestJS backend via `fork()` instead of Java JAR
+- [x] Updated electron-builder extraResources for NestJS (dist, node_modules, prisma)
+- [x] IPC ready signal between Electron and backend
+- [x] Prisma migrations run in Electron main process before backend starts
+- [x] Graceful shutdown with SIGTERM/SIGKILL escalation
+- [x] `enableShutdownHooks()` for NestJS lifecycle cleanup
 
-#### Phase 6: Electron Integration
-- [ ] Task 6.1: Update `electron/main.js` to spawn Node backend
-- [ ] Task 6.2: Test database paths (dev, installed, portable)
-- [ ] Task 6.3: Test startup/shutdown lifecycle
+#### Phase 7: Final Integration (partial)
+- [x] Test coverage: 81.9% statements, 201 tests passing
+- [x] Production build pipeline: `prepare-production.sh` script for standalone node_modules
+- [x] Build changed from `nest build` to `tsc` (no @nestjs/cli runtime dependency)
+- [ ] Test on Windows, verify portable mode (requires manual testing)
 
-#### Phase 7: Final Integration
-- [ ] Task 7.1: Achieve 80% test coverage
-- [ ] Task 7.2: Test full build pipeline
-- [ ] Task 7.3: Test on Windows, verify portable mode
-- [ ] Task 7.4: Update documentation
+### Remaining
 
 #### Phase 8: Cleanup
 - [ ] Delete `finance-backend/` (Java)
@@ -70,6 +73,8 @@ We're rewriting the Java/Spring finance backend to Node.js/NestJS to simplify th
 │   └── backend/                    # NEW NestJS backend
 │       ├── prisma/
 │       │   └── schema.prisma       # Full database schema
+│       ├── scripts/
+│       │   └── prepare-production.sh  # Standalone node_modules for Electron
 │       ├── src/
 │       │   ├── main.ts             # Entry point (port 8080)
 │       │   ├── app.module.ts       # Root module
@@ -87,10 +92,14 @@ We're rewriting the Java/Spring finance backend to Node.js/NestJS to simplify th
 │       │       ├── tags/
 │       │       ├── payees/
 │       │       ├── goals/
-│       │       └── export/
+│       │       ├── export/
+│       │       ├── audit/
+│       │       └── seed/
 │       └── package.json
-├── finance-backend/                # OLD Java backend (to be deleted)
-├── finance-desktop/                # Electron frontend (unchanged)
+├── finance-backend/                # OLD Java backend (to be deleted in Phase 8)
+├── finance-desktop/                # Electron frontend
+│   ├── electron/main.js            # Updated for NestJS backend
+│   └── package.json                # Updated build scripts
 └── docs/plans/
     ├── 2025-02-05-backend-rewrite-design.md
     └── 2025-02-05-backend-rewrite-implementation.md
@@ -108,8 +117,21 @@ npx jest
 # Run specific test file
 npx jest accounts
 
+# Run tests with coverage
+npx jest --coverage
+
 # Start dev server
 npm run start:dev
+
+# Build backend
+npm run build
+
+# Prepare production bundle (standalone node_modules)
+bash scripts/prepare-production.sh
+
+# Build entire desktop app
+cd /mnt/c/P/Java/finance-desktop
+npm run build:desktop
 
 # Generate Prisma client after schema changes
 npx prisma generate
@@ -127,8 +149,6 @@ git branch
 
 # View all commits on feature branch
 git log --oneline feature/nestjs-backend --not master
-
-# 20 commits total
 ```
 
 ## Test Summary
@@ -149,8 +169,11 @@ git log --oneline feature/nestjs-backend --not master
 | Payees | 17 |
 | Goals | 19 |
 | Export | 14 |
+| Audit Service | 8 |
+| Audit Interceptor | 13 |
+| Data Initializer | 7 |
 | App Module | 1 |
-| **Total** | **173** |
+| **Total** | **201** |
 
 ## API Endpoints Implemented
 
@@ -178,20 +201,26 @@ git log --oneline feature/nestjs-backend --not master
 - `GET /api/export/csv/transactions`
 - `POST /api/import/json?mode=replace|merge`
 
-### Health
+### Audit
+- `GET /api/audit/recent?limit=50`
+- `GET /api/audit/:entityType/:entityId`
+
+### Infrastructure
 - `GET /api/health`
+- `GET /api/docs` (Swagger UI)
 
 ## Notes for Next Session
 
-1. **Continue with Phase 5** - Start with Audit Module
-2. **IDE TypeScript Errors** - The IDE shows Jest type errors but tests pass fine. This is an IDE sync issue, not a real problem.
-3. **Design Documents** - Full specs are in `docs/plans/2025-02-05-backend-rewrite-*.md`
-4. **Workflow** - We used subagent-driven development with TDD and code reviews
+1. **Continue with Phase 8** - Cleanup (delete Java backend, reorganize)
+2. **Windows Testing** - The portable mode and full desktop build need testing on Windows
+3. **Production build** - Use `bash scripts/prepare-production.sh` then `npm run build:desktop`
+4. **IDE TypeScript Errors** - The IDE shows Jest type errors but tests pass fine. This is an IDE sync issue.
+5. **WSL2 Performance** - Module loading takes ~20s in WSL2 due to filesystem overhead. Native Windows/Linux will be much faster.
 
 ## How to Resume
 
 ```
 Continue the NestJS backend rewrite from where we left off.
 See docs/plans/SESSION-HANDOFF.md for current state.
-Start with Phase 5: Infrastructure (Audit Module, Swagger, Data Seeding).
+Start with Phase 8: Cleanup (delete Java backend, reorganize monorepo).
 ```

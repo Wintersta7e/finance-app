@@ -1,33 +1,55 @@
 # Finance Monorepo
 
-This repo contains two modules:
-- **finance-backend** – Spring Boot 4 / Java 21 service providing REST APIs and H2 persistence.
-- **finance-desktop** – Electron + Vite + React desktop client, bundled with the backend JAR (and optional JRE) for portable Windows usage.
+Personal finance tracking desktop application.
+
+- **packages/backend** – NestJS / Prisma / SQLite REST API
+- **packages/desktop** – Electron + Vite + React TypeScript desktop client
 
 ## Prerequisites
 - Node 20+
-- Java 21 (for building the backend; packaged desktop can bundle its own JRE)
 
-## One-shot build (backend + desktop)
-- From repo root: `bash build-all.sh`
-- Produces backend JAR under `finance-backend/target/` then packages the Electron desktop bundle to `finance-desktop/dist/`.
-- Optional version override for the desktop artifact: `APP_VERSION=0.1.0 bash build-all.sh` (otherwise the version in `finance-desktop/package.json` is used).
+## Quick Start (development)
 
-## Backend (finance-backend)
-- Build/package: `cd finance-backend && ./mvnw clean package`
-- Run in dev: `./mvnw spring-boot:run`
-- API base: `http://127.0.0.1:8080/api`
-- Default H2 DB: `jdbc:h2:file:~/finance-app/data/finance-db;AUTO_SERVER=TRUE` (override via `SPRING_DATASOURCE_URL`)
+```bash
+npm install              # Install all workspace dependencies
+npm run dev:backend      # Start backend with hot reload (port 8080)
+npm run dev:desktop      # Start Vite + Electron desktop app
+```
 
-## Desktop (finance-desktop)
-- Install deps: `cd finance-desktop && npm install`
-- Dev (Vite + Electron): `npm run dev:desktop`
-- Package Windows portable EXE (includes backend JAR + optional JRE):
-  1. Ensure backend JAR exists at `../finance-backend/target/finance-backend-0.0.1-SNAPSHOT.jar` (`./mvnw clean package`).
-  2. (Optional) Place a Windows JRE under `finance-desktop/jre/bin/java.exe` to bundle it; otherwise system `java` is used.
-  3. `npm run build:desktop`
-  4. Run `dist/Finance Desktop-<version>-portable.exe` (data stored next to the EXE in `data/`).
-- Health check when running: `curl http://127.0.0.1:8080/api/health`
+Or run both together:
+```bash
+npm run dev
+```
+
+## Build
+
+### Full desktop build
+```bash
+bash build-all.sh
+# Optional version override:
+APP_VERSION=1.0.0 bash build-all.sh
+```
+
+Output: `packages/desktop/dist/Finance Desktop-<version>-portable.exe`
+
+### Backend only
+```bash
+npm -w @finance/backend run build     # TypeScript compilation
+npm -w @finance/backend run test      # Run 201 tests
+```
+
+### Frontend only
+```bash
+npm -w @finance/desktop run build     # Vite build
+npm -w @finance/desktop run lint      # ESLint
+```
+
+## API
+- Base URL: `http://127.0.0.1:8080/api`
+- Swagger docs: `http://127.0.0.1:8080/api/docs`
+- Health check: `GET /api/health`
 
 ## Docs
-- Desktop UI/design system and flows: `finance-desktop/UI.md`
+- `packages/desktop/UI.md` – Design system and component patterns
+- `packages/desktop/USER_GUIDE.md` – End-user documentation
+- `docs/plans/` – Architecture and implementation plans

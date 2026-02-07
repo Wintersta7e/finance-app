@@ -58,12 +58,10 @@ We're rewriting the Java/Spring finance backend to Node.js/NestJS to simplify th
 - [x] Build changed from `nest build` to `tsc` (no @nestjs/cli runtime dependency)
 - [ ] Test on Windows, verify portable mode (requires manual testing)
 
-### Remaining
-
-#### Phase 8: Cleanup
-- [ ] Delete `finance-backend/` (Java)
-- [ ] Move `finance-desktop/` to `packages/desktop/`
-- [ ] Update root README
+#### Phase 8: Cleanup (3 commits)
+- [x] Deleted `finance-backend/` (Java, 55 files)
+- [x] Moved `finance-desktop/` to `packages/desktop/`
+- [x] Updated root README, CLAUDE.md, build-all.sh
 
 ## Key Files & Locations
 
@@ -96,11 +94,10 @@ We're rewriting the Java/Spring finance backend to Node.js/NestJS to simplify th
 │       │       ├── audit/
 │       │       └── seed/
 │       └── package.json
-├── finance-backend/                # OLD Java backend (to be deleted in Phase 8)
-├── finance-desktop/                # Electron frontend
-│   ├── electron/main.js            # Updated for NestJS backend
-│   └── package.json                # Updated build scripts
-└── docs/plans/
+│   └── desktop/                    # Electron + React frontend
+│       ├── electron/main.js         # Updated for NestJS backend
+│       └── package.json            # Updated build scripts
+├── docs/plans/
     ├── 2025-02-05-backend-rewrite-design.md
     └── 2025-02-05-backend-rewrite-implementation.md
 ```

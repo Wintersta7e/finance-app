@@ -3,14 +3,14 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-echo "Building backend (finance-backend)…"
-(cd "${ROOT_DIR}/finance-backend" && ./mvnw clean package)
+echo "Preparing backend (packages/backend)…"
+bash "${ROOT_DIR}/packages/backend/scripts/prepare-production.sh"
 
 APP_VERSION="${APP_VERSION:-}"
 
-echo "Installing frontend deps and building desktop bundle (finance-desktop)…"
+echo "Installing frontend deps and building desktop bundle (packages/desktop)…"
 (
-  cd "${ROOT_DIR}/finance-desktop"
+  cd "${ROOT_DIR}/packages/desktop"
   npm ci
   npm run build
   if [ -n "${APP_VERSION}" ]; then
@@ -21,4 +21,4 @@ echo "Installing frontend deps and building desktop bundle (finance-desktop)…"
   fi
 )
 
-echo "Build complete. Backend JAR is in finance-backend/target, desktop artifacts in finance-desktop/dist."
+echo "Build complete. Desktop artifacts in packages/desktop/dist."

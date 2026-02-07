@@ -1,93 +1,137 @@
 const { app, BrowserWindow } = require('electron');
 const path = require('node:path');
-const { spawn } = require('node:child_process');
+const { fork, execFileSync } = require('node:child_process');
 const fs = require('node:fs');
 
 const isDev = !app.isPackaged;
 const DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173';
-const BACKEND_JAR = 'finance-backend-0.0.1-SNAPSHOT.jar';
 const forceDevTools = process.argv.includes('--dev');
-const debugBackend = forceDevTools;
 
-function getJavaCmd() {
-  if (isDev) {
-    return 'java';
-  }
-
-  const jreBase = path.join(process.resourcesPath, 'jre');
-  const bundled = path.join(jreBase, 'bin', 'java.exe');
-  if (fs.existsSync(bundled)) {
-    return bundled;
-  }
-
-  console.warn('Bundled JRE not found, falling back to system java');
-  return 'java';
-}
-
-function getPortableDataDir() {
-  const exeDir = process.env.PORTABLE_EXECUTABLE_DIR;
-  if (!exeDir) {
-    return null;
-  }
-  return path.join(exeDir, 'data');
-}
-
-function getBackendJarPath() {
-  if (isDev) {
-    // In dev, use the jar produced by the backend module.
-    return path.resolve(__dirname, '..', '..', 'finance-backend', 'target', BACKEND_JAR);
-  }
-
-  // In production, the jar is copied into the packaged app's resources.
-  return path.join(process.resourcesPath, 'backend', BACKEND_JAR);
-}
+const BACKEND_READY_TIMEOUT_MS = 15_000;
 
 let backendProc = null;
+let isQuitting = false;
 
-function startBackend() {
-  const jarPath = getBackendJarPath();
-  const env = { ...process.env };
+function getDataDir() {
+  const exeDir = process.env.PORTABLE_EXECUTABLE_DIR;
+  if (exeDir) {
+    return path.join(exeDir, 'data');
+  }
+  return path.join(app.getPath('userData'), 'data');
+}
 
-  if (!isDev) {
-    const dataDir = getPortableDataDir();
-    if (dataDir) {
-      // Ensure data directory exists for H2 file DB.
-      fs.mkdirSync(dataDir, { recursive: true });
-      const dbFilePath = path.join(dataDir, 'finance-db').replace(/\\/g, '/');
-      env.SPRING_DATASOURCE_URL = `jdbc:h2:file:${dbFilePath};AUTO_SERVER=TRUE`;
-    }
+function getBackendRoot() {
+  return path.join(process.resourcesPath, 'backend');
+}
+
+function runMigrations(env) {
+  const backendRoot = getBackendRoot();
+  const prismaBin = path.join(backendRoot, 'node_modules', '.bin', 'prisma');
+
+  if (!fs.existsSync(prismaBin)) {
+    console.warn('Prisma CLI not found, skipping migrations');
+    return;
   }
 
-  function spawnBackend(javaCmd, allowFallback) {
-    console.log('Starting backend from', jarPath, 'using', javaCmd);
-
-    backendProc = spawn(javaCmd, ['-jar', jarPath], {
+  try {
+    console.log('Running database migrations...');
+    execFileSync(prismaBin, ['migrate', 'deploy'], {
+      cwd: backendRoot,
       env,
-      stdio: debugBackend ? 'inherit' : 'ignore',
+      stdio: 'ignore',
+      timeout: 30_000,
+    });
+    console.log('Database migrations complete');
+  } catch (err) {
+    console.warn('Migration failed, database may already be up to date:', err.message);
+  }
+}
+
+function startBackend() {
+  return new Promise((resolve, reject) => {
+    const entryPoint = path.join(getBackendRoot(), 'dist', 'src', 'main.js');
+    const dataDir = getDataDir();
+
+    fs.mkdirSync(dataDir, { recursive: true });
+
+    const dbPath = path.join(dataDir, 'finance.db').replace(/\\/g, '/');
+    const env = {
+      ...process.env,
+      DATABASE_URL: `file:${dbPath}`,
+    };
+
+    runMigrations(env);
+
+    console.log('Starting NestJS backend from', entryPoint);
+    console.log('Database path:', dbPath);
+
+    backendProc = fork(entryPoint, [], {
+      env,
+      stdio: 'pipe',
       windowsHide: true,
+    });
+
+    // Pipe backend stdout/stderr to the main process console
+    if (backendProc.stdout) {
+      backendProc.stdout.on('data', (data) => {
+        console.log(`[backend] ${data.toString().trimEnd()}`);
+      });
+    }
+    if (backendProc.stderr) {
+      backendProc.stderr.on('data', (data) => {
+        console.error(`[backend] ${data.toString().trimEnd()}`);
+      });
+    }
+
+    const timeout = setTimeout(() => {
+      console.warn('Backend did not signal ready within timeout, proceeding anyway');
+      resolve();
+    }, BACKEND_READY_TIMEOUT_MS);
+
+    backendProc.on('message', (msg) => {
+      if (msg === 'ready') {
+        console.log('Backend signalled ready');
+        clearTimeout(timeout);
+        resolve();
+      }
     });
 
     backendProc.on('error', (err) => {
       console.error('Backend process error:', err);
+      clearTimeout(timeout);
+      reject(err);
     });
 
     backendProc.on('exit', (code, signal) => {
       console.log(`Backend process exited with code=${code}, signal=${signal}`);
+      clearTimeout(timeout);
       backendProc = null;
-      if (!isDev && allowFallback && javaCmd !== 'java' && code !== 0) {
-        console.warn('Retrying backend with system java fallback');
-        spawnBackend('java', false);
-      }
     });
-  }
-
-  spawnBackend(getJavaCmd(), true);
+  });
 }
 
 function stopBackend() {
-  if (backendProc && !backendProc.killed) {
-    backendProc.kill();
-  }
+  return new Promise((resolve) => {
+    if (!backendProc || backendProc.killed) {
+      resolve();
+      return;
+    }
+
+    const forceKillTimeout = setTimeout(() => {
+      if (backendProc && !backendProc.killed) {
+        console.warn('Backend did not exit gracefully, sending SIGKILL');
+        backendProc.kill('SIGKILL');
+      }
+      resolve();
+    }, 5000);
+
+    backendProc.on('exit', () => {
+      clearTimeout(forceKillTimeout);
+      resolve();
+    });
+
+    backendProc.kill('SIGTERM');
+  });
 }
 
 function createWindow() {
@@ -122,10 +166,13 @@ function createWindow() {
   });
 }
 
-app.whenReady().then(() => {
-  // In dev, assume backend is started manually to avoid accidental rebuilds.
+app.whenReady().then(async () => {
   if (!isDev) {
-    startBackend();
+    try {
+      await startBackend();
+    } catch (err) {
+      console.error('Failed to start backend:', err);
+    }
   } else {
     console.log('Dev mode detected; expecting backend to be running separately.');
   }
@@ -133,9 +180,12 @@ app.whenReady().then(() => {
   createWindow();
 });
 
-app.on('before-quit', () => {
-  if (!isDev) {
-    stopBackend();
+app.on('before-quit', async (e) => {
+  if (!isDev && !isQuitting) {
+    isQuitting = true;
+    e.preventDefault();
+    await stopBackend();
+    app.quit();
   }
 });
 

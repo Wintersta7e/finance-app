@@ -22,6 +22,7 @@ async function bootstrap() {
   );
 
   app.useGlobalFilters(new GlobalExceptionFilter());
+  app.enableShutdownHooks();
 
   const config = new DocumentBuilder()
     .setTitle('Finance API')

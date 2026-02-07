@@ -11,7 +11,8 @@
     "electron": "cross-env NODE_ENV=development electron ./electron/main.js",
     "electron:prod": "cross-env NODE_ENV=production electron ./electron/main.js",
     "dev:desktop": "concurrently -k \"npm run dev\" \"wait-on http://localhost:5173 && npm run electron\"",
-    "build:desktop": "npm run build && electron-builder",
+    "build:backend": "cd ../packages/backend && npm run build && npm install --omit=dev --install-links",
+    "build:desktop": "npm run build:backend && npm run build && electron-builder",
     "lint": "eslint ."
   },
   "dependencies": {
@@ -27,7 +28,7 @@
     "@vitejs/plugin-react": "^5.1.1",
     "concurrently": "^9.0.0",
     "cross-env": "^7.0.3",
-    "electron": "^34.0.0",
+    "electron": "^40.1.0",
     "electron-builder": "^26.0.12",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
@@ -48,15 +49,25 @@
     ],
     "extraResources": [
       {
-        "from": "../finance-backend/target",
-        "to": "backend",
+        "from": "../packages/backend/dist",
+        "to": "backend/dist"
+      },
+      {
+        "from": "../packages/backend/node_modules",
+        "to": "backend/node_modules"
+      },
+      {
+        "from": "../packages/backend/prisma",
+        "to": "backend/prisma",
         "filter": [
-          "finance-backend-0.0.1-SNAPSHOT.jar"
+          "schema.prisma",
+          "migrations/**/*",
+          "migration_lock.toml"
         ]
       },
       {
-        "from": "jre",
-        "to": "jre"
+        "from": "../packages/backend/package.json",
+        "to": "backend/package.json"
       }
     ],
     "win": {

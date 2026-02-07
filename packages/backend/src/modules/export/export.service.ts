@@ -100,7 +100,7 @@ export class ExportService {
     });
 
     const headers = ['date', 'amount', 'type', 'account', 'category', 'payee', 'notes'];
-    const rows = transactions.map((t) => {
+    const rows = transactions.map((t: any) => {
       const date = t.date instanceof Date
         ? t.date.toISOString().split('T')[0]
         : String(t.date).split('T')[0];
@@ -133,7 +133,7 @@ export class ExportService {
       throw new BadRequestException(`Invalid import mode: ${mode}. Must be 'replace' or 'merge'.`);
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       const summary: ImportSummary = {
         imported: {
           accounts: 0,

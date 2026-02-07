@@ -2,7 +2,7 @@ import {
   IsString,
   IsNumber,
   IsOptional,
-  IsDateString,
+  IsDate,
   IsIn,
   IsBoolean,
 } from 'class-validator';
@@ -27,12 +27,12 @@ export class CreateRecurringRuleDto {
   period: RecurringPeriod;
 
   @Type(() => Date)
-  @IsDateString()
+  @IsDate()
   startDate: Date;
 
   @IsOptional()
   @Type(() => Date)
-  @IsDateString()
+  @IsDate()
   endDate?: Date;
 
   @IsOptional()

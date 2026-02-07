@@ -1,4 +1,4 @@
-import { IsOptional, IsInt, Min, Max } from 'class-validator';
+import { IsInt, Min, Max, IsDate } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class MonthQueryDto {
@@ -17,8 +17,10 @@ export class MonthQueryDto {
 
 export class DateRangeQueryDto {
   @Type(() => Date)
+  @IsDate()
   from: Date;
 
   @Type(() => Date)
+  @IsDate()
   to: Date;
 }

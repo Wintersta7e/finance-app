@@ -184,7 +184,7 @@ export class AnalyticsService {
     }
 
     // Build result: only include categories that have budgets
-    return budgets.map((budget) => ({
+    return budgets.map((budget: any) => ({
       categoryId: budget.categoryId,
       categoryName: budget.category.name,
       budgeted: this.toNumber(budget.amount),

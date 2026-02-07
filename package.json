@@ -5,9 +5,8 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:desktop\"",
+    "dev": "concurrently -k \"npm run dev:backend\" \"npm -w @finance/desktop run dev\" \"wait-on http://localhost:5173 && npm -w @finance/desktop run electron\"",
     "dev:backend": "npm -w @finance/backend run start:dev",
-    "dev:desktop": "npm -w @finance/desktop run dev:desktop",
     "build": "npm run build:backend && npm run build:desktop",
     "build:backend": "npm -w @finance/backend run build",
     "build:desktop": "npm -w @finance/desktop run build:desktop",
@@ -15,6 +14,7 @@
     "lint": "npm -w @finance/backend run lint"
   },
   "devDependencies": {
-    "concurrently": "^8.2.0"
+    "concurrently": "^9.0.0",
+    "wait-on": "^8.0.0"
   }
 }

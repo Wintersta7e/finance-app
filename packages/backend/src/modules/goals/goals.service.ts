@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { SavingsGoal } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateGoalDto } from './dto/create-goal.dto';
 import { UpdateGoalDto } from './dto/update-goal.dto';
 import { ContributeDto } from './dto/contribute.dto';
 import { EntityNotFoundException } from '../../common/exceptions/business.exceptions';
+
+type SavingsGoal = Awaited<ReturnType<PrismaService['savingsGoal']['findFirst']>> & {};
 
 export interface GoalWithProgress extends SavingsGoal {
   progress: number;

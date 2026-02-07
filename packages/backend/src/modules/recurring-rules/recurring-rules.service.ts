@@ -75,6 +75,43 @@ export class RecurringRulesService {
     });
   }
 
+  async generateNext(id: number) {
+    const rule = await this.findOne(id);
+
+    // Create a transaction from the rule
+    const transaction = await this.prisma.transaction.create({
+      data: {
+        date: rule.nextOccurrence,
+        amount: this.normalizeAmount(rule.amount, rule.direction),
+        type: rule.direction === 'INCOME' ? 'INCOME' : 'VARIABLE_EXPENSE',
+        accountId: rule.accountId,
+        categoryId: rule.categoryId,
+        payeeId: rule.payeeId,
+        notes: rule.note,
+        recurringRuleId: rule.id,
+      },
+    });
+
+    // Calculate and update nextOccurrence
+    const newNext = this.scheduleService.calculateNextOccurrence(
+      rule.startDate,
+      rule.period,
+      rule.nextOccurrence,
+    );
+
+    await this.prisma.recurringRule.update({
+      where: { id },
+      data: { nextOccurrence: newNext },
+    });
+
+    return transaction;
+  }
+
+  private normalizeAmount(amount: unknown, direction: string): number {
+    const abs = Math.abs(Number(amount));
+    return direction === 'EXPENSE' ? -abs : abs;
+  }
+
   async remove(id: number) {
     await this.findOne(id);
 

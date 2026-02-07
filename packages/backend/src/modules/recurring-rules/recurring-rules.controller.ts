@@ -44,6 +44,12 @@ export class RecurringRulesController {
     return this.service.update(id, dto);
   }
 
+  @Post(':id/generate-next')
+  @HttpCode(HttpStatus.OK)
+  generateNext(@Param('id', ParseIntPipe) id: number) {
+    return this.service.generateNext(id);
+  }
+
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.service.remove(id);

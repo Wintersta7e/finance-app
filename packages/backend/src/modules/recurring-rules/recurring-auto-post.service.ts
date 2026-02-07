@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RecurringScheduleService } from './recurring-schedule.service';
-import { Transaction } from '@prisma/client';
+
+type Transaction = Awaited<ReturnType<PrismaService['transaction']['create']>>;
 
 export interface AutoPostResult {
   processed: number;
@@ -58,7 +59,7 @@ export class RecurringAutoPostService {
 
     // Process each rule
     for (const rule of rules) {
-      const transaction = await this.prisma.$transaction(async (tx) => {
+      const transaction = await this.prisma.$transaction(async (tx: any) => {
         // Create transaction from the rule
         const newTransaction = await tx.transaction.create({
           data: {

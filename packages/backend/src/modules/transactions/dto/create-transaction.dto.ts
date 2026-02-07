@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsOptional, IsDateString, IsIn } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsDate, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export const TRANSACTION_TYPES = [
@@ -12,7 +12,7 @@ export type TransactionType = (typeof TRANSACTION_TYPES)[number];
 
 export class CreateTransactionDto {
   @Type(() => Date)
-  @IsDateString()
+  @IsDate()
   date: Date;
 
   @IsNumber()

@@ -1,4 +1,4 @@
-import { IsOptional, IsInt, Min, Max, IsString, IsIn, IsDateString } from 'class-validator';
+import { IsOptional, IsInt, Min, Max, IsString, IsIn, IsDate } from 'class-validator';
 import { Type } from 'class-transformer';
 import { TRANSACTION_TYPES, TransactionType } from './create-transaction.dto';
 
@@ -18,10 +18,12 @@ export class TransactionQueryDto {
 
   @IsOptional()
   @Type(() => Date)
+  @IsDate()
   startDate?: Date;
 
   @IsOptional()
   @Type(() => Date)
+  @IsDate()
   endDate?: Date;
 
   @IsOptional()

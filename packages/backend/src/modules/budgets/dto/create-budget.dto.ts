@@ -1,7 +1,7 @@
 import {
   IsNumber,
   IsOptional,
-  IsDateString,
+  IsDate,
   IsIn,
   IsPositive,
 } from 'class-validator';
@@ -20,12 +20,12 @@ export class CreateBudgetDto {
   period?: BudgetPeriod = 'MONTHLY';
 
   @Type(() => Date)
-  @IsDateString()
+  @IsDate()
   effectiveFrom: Date;
 
   @IsOptional()
   @Type(() => Date)
-  @IsDateString()
+  @IsDate()
   effectiveTo?: Date;
 
   @IsNumber()

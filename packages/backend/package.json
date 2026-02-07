@@ -6,8 +6,8 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/src/main.js",
-    "start:dev": "nest start --watch",
-    "start:debug": "nest start --debug --watch",
+    "start:dev": "tsc && node --watch dist/src/main.js",
+    "start:debug": "node --inspect --watch dist/src/main.js",
     "lint": "eslint \"{src,test}/**/*.ts\"",
     "test": "jest",
     "test:watch": "jest --watch",

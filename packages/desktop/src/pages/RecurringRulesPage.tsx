@@ -78,8 +78,8 @@ export function RecurringRulesPage() {
       amount: rule.amount.toString(),
       direction: rule.direction,
       period: rule.period,
-      startDate: rule.startDate,
-      endDate: rule.endDate ?? '',
+      startDate: rule.startDate.slice(0, 10),
+      endDate: rule.endDate ? rule.endDate.slice(0, 10) : '',
       autoPost: rule.autoPost,
       note: rule.note ?? '',
     });
@@ -209,8 +209,8 @@ export function RecurringRulesPage() {
                     <td>{rule.amount.toFixed(2)}</td>
                     <td>{rule.direction}</td>
                     <td>{rule.period}</td>
-                    <td>{rule.startDate}</td>
-                    <td>{rule.endDate ?? '—'}</td>
+                    <td>{rule.startDate.slice(0, 10)}</td>
+                    <td>{rule.endDate ? rule.endDate.slice(0, 10) : '—'}</td>
                     <td>{rule.note || '—'}</td>
                     <td>{rule.autoPost ? 'Yes' : 'No'}</td>
                     <td>

@@ -84,7 +84,7 @@ export function QuickTransactionForm({ onChange }: QuickTransactionFormProps) {
     const payload: Omit<Transaction, 'id'> = {
       date: form.date,
         amount: signedAmount,
-      type: form.type === 'EXPENSE' ? 'EXPENSE' : form.type === 'INCOME' ? 'INCOME' : 'TRANSFER',
+      type: form.type === 'INCOME' ? 'INCOME' : form.type === 'TRANSFER' ? 'TRANSFER' : (categories.find(c => c.id === form.categoryId)?.fixedCost ? 'FIXED_COST' : 'VARIABLE_EXPENSE'),
       accountId: form.accountId,
       categoryId: form.type === 'TRANSFER' ? null : form.categoryId,
       notes: form.notes.trim() ? form.notes.trim() : null,

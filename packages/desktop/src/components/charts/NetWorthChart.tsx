@@ -62,7 +62,7 @@ export function NetWorthChart({ refreshToken = 0 }: NetWorthChartProps) {
             color: tokens.colors.textPrimary,
           }}
         />
-        <Line type="monotone" dataKey="value" stroke={tokens.colors.accent} strokeWidth={2.4} dot={false} />
+        <Line type="monotone" dataKey="balance" stroke={tokens.colors.accent} strokeWidth={2.4} dot={false} />
       </LineChart>
     </ResponsiveContainer>
   );

@@ -62,9 +62,11 @@ export function BudgetsPage() {
   const openEdit = (budget: Budget) => {
     setEditing(budget);
     setForm({
-      ...budget,
+      categoryId: budget.categoryId,
       amount: budget.amount.toString(),
-      effectiveTo: budget.effectiveTo ?? '',
+      period: budget.period,
+      effectiveFrom: budget.effectiveFrom.slice(0, 10),
+      effectiveTo: budget.effectiveTo ? budget.effectiveTo.slice(0, 10) : '',
     });
   };
 
@@ -87,9 +89,10 @@ export function BudgetsPage() {
     }
 
     const payload: Omit<Budget, 'id'> = {
-      ...form,
       categoryId: form.categoryId as number,
       amount: parsedAmount,
+      period: form.period,
+      effectiveFrom: form.effectiveFrom,
       effectiveTo: form.effectiveTo || null,
     };
     setSaving(true);
@@ -174,8 +177,8 @@ export function BudgetsPage() {
                     <td>{categoryNames.get(b.categoryId) ?? `Category ${b.categoryId}`}</td>
                     <td>{b.period}</td>
                     <td>{b.amount.toFixed(2)}</td>
-                    <td>{b.effectiveFrom}</td>
-                    <td>{b.effectiveTo ?? '—'}</td>
+                    <td>{b.effectiveFrom.slice(0, 10)}</td>
+                    <td>{b.effectiveTo ? b.effectiveTo.slice(0, 10) : '—'}</td>
                     <td>
                       <div style={{ display: 'flex', gap: '0.45rem' }}>
                         <Button variant="ghost" onClick={() => openEdit(b)} disabled={saving} style={{ padding: '0.4rem 0.65rem' }}>

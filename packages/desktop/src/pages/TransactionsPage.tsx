@@ -80,7 +80,7 @@ export function TransactionsPage({ onDataChanged }: TransactionsPageProps) {
               <tbody>
                 {txs.map((t) => (
                   <tr key={t.id}>
-                    <td>{t.date}</td>
+                    <td>{t.date.slice(0, 10)}</td>
                     <td>{t.type}</td>
                     <td style={{ textAlign: 'right', color: t.amount < 0 ? tokens.colors.danger : tokens.colors.success }}>
                       {t.amount.toFixed(2)}

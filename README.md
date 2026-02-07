@@ -55,11 +55,10 @@ npm install                 # install all workspace dependencies
 npm run dev                 # start backend + frontend together
 ```
 
-Or separately:
+Or run backend only:
 
 ```bash
 npm run dev:backend         # NestJS with hot reload (port 8080)
-npm run dev:desktop         # Vite + Electron
 ```
 
 ### Testing

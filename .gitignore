@@ -3,47 +3,22 @@ node_modules/
 
 # Build output
 dist/
-target/
 packages/backend/node_modules_prod/
 coverage/
-
-# Java / Maven
-.mvn/
-*.jar
-*.class
-
-# Package lock files (regenerated from package.json)
-package-lock.json
 
 # Logs
 logs
 *.log
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
 
 # Editors/IDE
 .idea/
 *.iml
-*.ipr
-*.iws
 .vscode/
-.project
-.classpath
-.settings/
-.factorypath
-.springBeans
-.sts4-cache
 
 # OS / misc
 .DS_Store
 *.local
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
 *.sw?
 .claude
 
@@ -56,5 +31,3 @@ docs/
 # Project instructions
 CLAUDE.md
 AGENTS.md
-instructions.md
-Plan.md

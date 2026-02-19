@@ -12,27 +12,48 @@ import type {
   BudgetVsActual,
 } from './types';
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers || {}),
-    },
-    ...options,
-  });
+async function request<T>(path: string, options: RequestInit = {}, retries = 5): Promise<T> {
+  let lastError: Error | null = null;
 
-  const text = await res.text().catch(() => '');
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(`${API_BASE_URL}${path}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(options.headers || {}),
+        },
+        ...options,
+      });
 
-  if (!res.ok) {
-    throw new Error(`API ${res.status} ${res.statusText}: ${text}`);
+      const text = await res.text().catch(() => '');
+
+      if (!res.ok) {
+        throw new Error(`API ${res.status} ${res.statusText}: ${text}`);
+      }
+
+      // Many endpoints return 204/empty bodies; avoid JSON parsing failures.
+      if (!text) {
+        return undefined as T;
+      }
+
+      return JSON.parse(text) as T;
+    } catch (err) {
+      lastError = err as Error;
+      const isConnectionError =
+        lastError.message === 'Failed to fetch' ||
+        lastError.message.includes('ECONNREFUSED') ||
+        lastError.message.includes('NetworkError');
+
+      if (!isConnectionError || attempt === retries) {
+        throw lastError;
+      }
+
+      // Wait before retrying: 1s, 2s, 4s, 8s, 16s
+      await new Promise((r) => setTimeout(r, 1000 * Math.pow(2, attempt)));
+    }
   }
 
-  // Many endpoints return 204/empty bodies; avoid JSON parsing failures.
-  if (!text) {
-    return undefined as T;
-  }
-
-  return JSON.parse(text) as T;
+  throw lastError;
 }
 
 export const api = {

@@ -45,6 +45,7 @@ export function Button({ variant = 'primary', style, disabled, type = 'button', 
     <button
       {...rest}
       type={type}
+      disabled={disabled}
       style={{
         ...baseStyle,
         ...variantStyles[variant],

@@ -6,21 +6,21 @@ export class MonthQueryDto {
   @IsInt()
   @Min(2000)
   @Max(2100)
-  year: number;
+  year!: number;
 
   @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(12)
-  month: number;
+  month!: number;
 }
 
 export class DateRangeQueryDto {
   @Type(() => Date)
   @IsDate()
-  from: Date;
+  from!: Date;
 
   @Type(() => Date)
   @IsDate()
-  to: Date;
+  to!: Date;
 }

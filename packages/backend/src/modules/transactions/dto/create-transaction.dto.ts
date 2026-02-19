@@ -13,17 +13,17 @@ export type TransactionType = (typeof TRANSACTION_TYPES)[number];
 export class CreateTransactionDto {
   @Type(() => Date)
   @IsDate()
-  date: Date;
+  date!: Date;
 
   @IsNumber()
-  amount: number;
+  amount!: number;
 
   @IsString()
   @IsIn(TRANSACTION_TYPES)
-  type: TransactionType;
+  type!: TransactionType;
 
   @IsNumber()
-  accountId: number;
+  accountId!: number;
 
   @IsOptional()
   @IsNumber()

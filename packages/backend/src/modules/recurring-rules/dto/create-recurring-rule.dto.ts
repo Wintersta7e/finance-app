@@ -16,19 +16,19 @@ export type RecurringPeriod = (typeof RECURRING_PERIODS)[number];
 
 export class CreateRecurringRuleDto {
   @IsNumber()
-  amount: number;
+  amount!: number;
 
   @IsString()
   @IsIn(DIRECTIONS)
-  direction: Direction;
+  direction!: Direction;
 
   @IsString()
   @IsIn(RECURRING_PERIODS)
-  period: RecurringPeriod;
+  period!: RecurringPeriod;
 
   @Type(() => Date)
   @IsDate()
-  startDate: Date;
+  startDate!: Date;
 
   @IsOptional()
   @Type(() => Date)
@@ -44,7 +44,7 @@ export class CreateRecurringRuleDto {
   note?: string;
 
   @IsNumber()
-  accountId: number;
+  accountId!: number;
 
   @IsOptional()
   @IsNumber()

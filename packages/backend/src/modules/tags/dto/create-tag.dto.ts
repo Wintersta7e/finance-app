@@ -3,7 +3,7 @@ import { IsString, IsOptional, IsNotEmpty, Matches } from 'class-validator';
 export class CreateTagDto {
   @IsString()
   @IsNotEmpty()
-  name: string;
+  name!: string;
 
   @IsOptional()
   @IsString()

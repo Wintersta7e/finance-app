@@ -3,11 +3,11 @@ import { IsString, IsBoolean, IsOptional, IsNotEmpty, IsIn } from 'class-validat
 export class CreateCategoryDto {
   @IsString()
   @IsNotEmpty()
-  name: string;
+  name!: string;
 
   @IsString()
   @IsIn(['INCOME', 'EXPENSE'])
-  kind: string;
+  kind!: string;
 
   @IsOptional()
   @IsBoolean()

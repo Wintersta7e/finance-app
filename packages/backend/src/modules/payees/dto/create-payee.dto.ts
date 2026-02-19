@@ -3,7 +3,7 @@ import { IsString, IsOptional, IsNotEmpty } from 'class-validator';
 export class CreatePayeeDto {
   @IsString()
   @IsNotEmpty()
-  name: string;
+  name!: string;
 
   @IsOptional()
   @IsString()

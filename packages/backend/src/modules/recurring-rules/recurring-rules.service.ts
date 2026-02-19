@@ -56,7 +56,7 @@ export class RecurringRulesService {
     const startDateChanged = dto.startDate !== undefined;
     const periodChanged = dto.period !== undefined;
 
-    let data: any = { ...dto };
+    const data: any = { ...dto };
 
     if (startDateChanged || periodChanged) {
       const startDate = dto.startDate ?? existing.startDate;

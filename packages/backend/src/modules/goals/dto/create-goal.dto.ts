@@ -12,11 +12,11 @@ import { Type } from 'class-transformer';
 export class CreateGoalDto {
   @IsString()
   @IsNotEmpty()
-  name: string;
+  name!: string;
 
   @IsNumber()
   @IsPositive()
-  targetAmount: number;
+  targetAmount!: number;
 
   @IsOptional()
   @IsNumber()

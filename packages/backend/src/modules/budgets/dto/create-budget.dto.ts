@@ -13,7 +13,7 @@ export type BudgetPeriod = (typeof BUDGET_PERIODS)[number];
 export class CreateBudgetDto {
   @IsNumber()
   @IsPositive()
-  amount: number;
+  amount!: number;
 
   @IsOptional()
   @IsIn(BUDGET_PERIODS)
@@ -21,7 +21,7 @@ export class CreateBudgetDto {
 
   @Type(() => Date)
   @IsDate()
-  effectiveFrom: Date;
+  effectiveFrom!: Date;
 
   @IsOptional()
   @Type(() => Date)
@@ -29,5 +29,5 @@ export class CreateBudgetDto {
   effectiveTo?: Date;
 
   @IsNumber()
-  categoryId: number;
+  categoryId!: number;
 }

@@ -1,5 +1,5 @@
 export class CategoryBreakdownDto {
-  categoryId: number | null;
-  categoryName: string;
-  amount: number;
+  categoryId!: number | null;
+  categoryName!: string;
+  amount!: number;
 }

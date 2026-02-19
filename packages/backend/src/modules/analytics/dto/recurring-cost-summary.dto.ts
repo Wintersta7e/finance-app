@@ -1,3 +1,3 @@
 export class RecurringCostSummaryDto {
-  monthlyTotal: number;
+  monthlyTotal!: number;
 }

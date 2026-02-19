@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Layout } from './components/Layout';
 import type { PageKey } from './components/Layout';
 import { AccountsPage } from './pages/AccountsPage';
@@ -46,9 +47,11 @@ function App() {
   }
 
   return (
-    <Layout currentPage={page} onChangePage={setPage}>
-      {content}
-    </Layout>
+    <ErrorBoundary>
+      <Layout currentPage={page} onChangePage={setPage}>
+        {content}
+      </Layout>
+    </ErrorBoundary>
   );
 }
 

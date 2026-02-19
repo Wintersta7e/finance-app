@@ -22,13 +22,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     let message = 'Internal server error';
     let error = 'Internal Server Error';
 
-    if (!(exception instanceof HttpException)) {
-      this.logger.error(
-        `Unhandled ${request.method} ${request.url}: ${exception instanceof Error ? exception.message : exception}`,
-        exception instanceof Error ? exception.stack : undefined,
-      );
-    }
-
     if (exception instanceof HttpException) {
       status = exception.getStatus();
       const res = exception.getResponse();
@@ -41,6 +34,15 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       status = prismaError.status;
       message = prismaError.message;
       error = prismaError.error;
+    }
+
+    if (status >= 500) {
+      this.logger.error(
+        `${request.method} ${request.url} → ${status}: ${message}`,
+        exception instanceof Error ? exception.stack : undefined,
+      );
+    } else if (status >= 400) {
+      this.logger.warn(`${request.method} ${request.url} → ${status}: ${message}`);
     }
 
     response.status(status).json({

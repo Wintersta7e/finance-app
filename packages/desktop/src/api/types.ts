@@ -85,3 +85,46 @@ export interface BudgetVsActual {
 export interface RecurringCosts {
   monthlyTotal: number;
 }
+
+export interface Tag {
+  id: number;
+  name: string;
+  color: string | null;
+}
+
+export interface Payee {
+  id: number;
+  name: string;
+  notes: string | null;
+}
+
+export interface Goal {
+  id: number;
+  name: string;
+  targetAmount: number;
+  currentAmount: number;
+  targetDate: string | null;
+  color: string | null;
+}
+
+export interface AuditEntry {
+  id: number;
+  entityType: string;
+  entityId: number;
+  action: string;
+  changes: string | null;
+  timestamp: string;
+}
+
+export interface ImportResult {
+  imported: {
+    accounts: number;
+    categories: number;
+    transactions: number;
+    recurringRules: number;
+    budgets: number;
+    tags: number;
+    payees: number;
+    goals: number;
+  };
+}

@@ -9,6 +9,11 @@ import { RecurringRulesPage } from './pages/RecurringRulesPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 import { BudgetsPage } from './pages/BudgetsPage';
 import { CategoriesPage } from './pages/CategoriesPage';
+import { TagsPage } from './pages/TagsPage';
+import { PayeesPage } from './pages/PayeesPage';
+import { GoalsPage } from './pages/GoalsPage';
+import { ExportImportPage } from './pages/ExportImportPage';
+import { AuditPage } from './pages/AuditPage';
 
 function App() {
   const [page, setPage] = useState<PageKey>('dashboard');
@@ -35,6 +40,21 @@ function App() {
       break;
     case 'categories':
       content = <CategoriesPage />;
+      break;
+    case 'tags':
+      content = <TagsPage />;
+      break;
+    case 'payees':
+      content = <PayeesPage />;
+      break;
+    case 'goals':
+      content = <GoalsPage />;
+      break;
+    case 'export':
+      content = <ExportImportPage />;
+      break;
+    case 'audit':
+      content = <AuditPage />;
       break;
     case 'dashboard':
     default:

@@ -10,6 +10,11 @@ import type {
   Category,
   Budget,
   BudgetVsActual,
+  Tag,
+  Payee,
+  Goal,
+  AuditEntry,
+  ImportResult,
 } from './types';
 
 async function request<T>(path: string, options: RequestInit = {}, retries = 5): Promise<T> {
@@ -191,5 +196,77 @@ export const api = {
 
   getRecurringCosts() {
     return request<import('./types').RecurringCosts>('/analytics/recurring-costs');
+  },
+
+  // Tags
+  getTags() {
+    return request<Tag[]>('/tags');
+  },
+  createTag(payload: Omit<Tag, 'id'>) {
+    return request<Tag>('/tags', { method: 'POST', body: JSON.stringify(payload) });
+  },
+  updateTag(id: number, payload: Omit<Tag, 'id'>) {
+    return request<Tag>(`/tags/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+  },
+  deleteTag(id: number) {
+    return request<void>(`/tags/${id}`, { method: 'DELETE' });
+  },
+
+  // Payees
+  getPayees() {
+    return request<Payee[]>('/payees');
+  },
+  createPayee(payload: Omit<Payee, 'id'>) {
+    return request<Payee>('/payees', { method: 'POST', body: JSON.stringify(payload) });
+  },
+  updatePayee(id: number, payload: Omit<Payee, 'id'>) {
+    return request<Payee>(`/payees/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+  },
+  deletePayee(id: number) {
+    return request<void>(`/payees/${id}`, { method: 'DELETE' });
+  },
+
+  // Goals
+  getGoals() {
+    return request<Goal[]>('/goals');
+  },
+  createGoal(payload: Omit<Goal, 'id' | 'currentAmount'>) {
+    return request<Goal>('/goals', { method: 'POST', body: JSON.stringify(payload) });
+  },
+  updateGoal(id: number, payload: Partial<Omit<Goal, 'id'>>) {
+    return request<Goal>(`/goals/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+  },
+  deleteGoal(id: number) {
+    return request<void>(`/goals/${id}`, { method: 'DELETE' });
+  },
+  contributeToGoal(id: number, amount: number) {
+    return request<Goal>(`/goals/${id}/contribute`, { method: 'POST', body: JSON.stringify({ amount }) });
+  },
+
+  // Export / Import
+  async exportJson(): Promise<Blob> {
+    const res = await fetch(`${API_BASE_URL}/export/json`);
+    if (!res.ok) throw new Error(`Export failed: ${res.status}`);
+    return res.blob();
+  },
+  async exportCsv(): Promise<Blob> {
+    const res = await fetch(`${API_BASE_URL}/export/csv/transactions`);
+    if (!res.ok) throw new Error(`CSV export failed: ${res.status}`);
+    return res.blob();
+  },
+  async importJson(file: File, mode: 'replace' | 'merge' = 'replace'): Promise<ImportResult> {
+    const data = JSON.parse(await file.text());
+    return request<ImportResult>(`/import/json?mode=${mode}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Audit
+  getRecentAudit(limit = 50) {
+    return request<AuditEntry[]>(`/audit/recent?limit=${limit}`);
+  },
+  getEntityHistory(entityType: string, entityId: number) {
+    return request<AuditEntry[]>(`/audit/${entityType}/${entityId}`);
   },
 };

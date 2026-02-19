@@ -1,7 +1,7 @@
 import { type ReactNode } from 'react';
 import { tokens } from '../theme';
 
-type PageKey = 'dashboard' | 'accounts' | 'transactions' | 'recurring' | 'analytics' | 'budgets' | 'categories';
+type PageKey = 'dashboard' | 'accounts' | 'transactions' | 'recurring' | 'analytics' | 'budgets' | 'categories' | 'tags' | 'payees' | 'goals' | 'export' | 'audit';
 
 interface LayoutProps {
   currentPage: PageKey;
@@ -17,6 +17,11 @@ const navItems: { key: PageKey; label: string; icon: ReactNode }[] = [
   { key: 'categories', label: 'Categories', icon: <IconTag /> },
   { key: 'analytics', label: 'Analytics', icon: <IconChart /> },
   { key: 'budgets', label: 'Budgets', icon: <IconCalendar /> },
+  { key: 'tags', label: 'Tags', icon: <IconLabel /> },
+  { key: 'payees', label: 'Payees', icon: <IconUser /> },
+  { key: 'goals', label: 'Goals', icon: <IconTarget /> },
+  { key: 'export', label: 'Export / Import', icon: <IconDownload /> },
+  { key: 'audit', label: 'Audit Log', icon: <IconClipboard /> },
 ];
 
 export function Layout({ currentPage, onChangePage, children }: LayoutProps) {
@@ -191,6 +196,53 @@ function IconCalendar() {
       <rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="1.5" />
       <path d="M16 3v4M8 3v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
       <path d="M3 10h18" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  );
+}
+
+function IconLabel() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+      <path d="M3 6h18M3 12h12M3 18h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <circle cx="19" cy="15" r="3" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  );
+}
+
+function IconUser() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M5 20c0-3.31 3.13-6 7-6s7 2.69 7 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconTarget() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="1.5" />
+      <circle cx="12" cy="12" r="1" fill="currentColor" />
+    </svg>
+  );
+}
+
+function IconDownload() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+      <path d="M12 4v12m0 0-4-4m4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconClipboard() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+      <rect x="5" y="3" width="14" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M9 3h6v2a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V3Z" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M9 10h6M9 14h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
   );
 }

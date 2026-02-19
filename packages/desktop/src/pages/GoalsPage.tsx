@@ -57,6 +57,7 @@ export function GoalsPage() {
     if (!form || !form.name.trim()) return;
     const target = parseFloat(form.targetAmount.replace(',', '.'));
     if (isNaN(target) || target <= 0) { setError('Enter a valid target amount'); return; }
+    setError(null);
     setSaving(true);
     try {
       const payload = {
@@ -71,7 +72,7 @@ export function GoalsPage() {
         await api.createGoal(payload);
       }
       closeModal();
-      load();
+      void load();
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -81,10 +82,11 @@ export function GoalsPage() {
 
   const handleDelete = async (goal: Goal) => {
     if (!window.confirm(`Delete goal "${goal.name}"?`)) return;
+    setError(null);
     setSaving(true);
     try {
       await api.deleteGoal(goal.id);
-      load();
+      void load();
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -92,16 +94,18 @@ export function GoalsPage() {
     }
   };
 
+  const closeContributeModal = () => { setContributeGoal(null); setContributeAmount(''); setError(null); };
+
   const handleContribute = async () => {
     if (!contributeGoal) return;
     const amount = parseFloat(contributeAmount.replace(',', '.'));
     if (isNaN(amount) || amount <= 0) { setError('Enter a valid amount'); return; }
+    setError(null);
     setSaving(true);
     try {
       await api.contributeToGoal(contributeGoal.id, amount);
-      setContributeGoal(null);
-      setContributeAmount('');
-      load();
+      closeContributeModal();
+      void load();
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -175,7 +179,7 @@ export function GoalsPage() {
                       <td>{goal.targetDate ? goal.targetDate.slice(0, 10) : '—'}</td>
                       <td>
                         <div style={{ display: 'flex', gap: '0.45rem' }}>
-                          <Button variant="ghost" onClick={() => { setContributeGoal(goal); setContributeAmount(''); }} style={{ padding: '0.35rem 0.6rem' }}>
+                          <Button variant="ghost" onClick={() => { closeModal(); setContributeGoal(goal); setContributeAmount(''); }} style={{ padding: '0.35rem 0.6rem' }}>
                             Contribute
                           </Button>
                           <Button variant="ghost" onClick={() => openEdit(goal)} style={{ padding: '0.35rem 0.6rem' }}>Edit</Button>
@@ -247,11 +251,11 @@ export function GoalsPage() {
       <Modal
         title={`Contribute to "${contributeGoal?.name}"`}
         open={contributeGoal !== null}
-        onClose={() => setContributeGoal(null)}
+        onClose={closeContributeModal}
         zIndex={60}
         footer={
           <>
-            <Button variant="ghost" onClick={() => setContributeGoal(null)} disabled={saving}>Cancel</Button>
+            <Button variant="ghost" onClick={closeContributeModal} disabled={saving}>Cancel</Button>
             <Button onClick={handleContribute} disabled={saving}>{saving ? 'Saving…' : 'Add funds'}</Button>
           </>
         }

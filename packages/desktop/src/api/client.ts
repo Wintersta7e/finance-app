@@ -255,18 +255,32 @@ export const api = {
     return res.blob();
   },
   async importJson(file: File, mode: 'replace' | 'merge' = 'replace'): Promise<ImportResult> {
-    const data = JSON.parse(await file.text());
-    return request<ImportResult>(`/import/json?mode=${mode}`, {
+    if (file.size > 50 * 1024 * 1024) {
+      throw new Error('Import file is too large (max 50 MB)');
+    }
+    const text = await file.text();
+    let data: unknown;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      throw new Error('File is not valid JSON. Please select a valid export file.');
+    }
+    if (typeof data !== 'object' || data === null || Array.isArray(data)) {
+      throw new Error('Import file has an unexpected format');
+    }
+    const params = new URLSearchParams({ mode });
+    return request<ImportResult>(`/import/json?${params}`, {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: text,
     });
   },
 
   // Audit
   getRecentAudit(limit = 50) {
-    return request<AuditEntry[]>(`/audit/recent?limit=${limit}`);
+    const params = new URLSearchParams({ limit: String(limit) });
+    return request<AuditEntry[]>(`/audit/recent?${params}`);
   },
   getEntityHistory(entityType: string, entityId: number) {
-    return request<AuditEntry[]>(`/audit/${entityType}/${entityId}`);
+    return request<AuditEntry[]>(`/audit/${encodeURIComponent(entityType)}/${entityId}`);
   },
 };

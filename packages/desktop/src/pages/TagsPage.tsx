@@ -35,11 +35,12 @@ export function TagsPage() {
   useEffect(() => { void load(); }, [load]);
 
   const openCreate = () => { setEditing(null); setForm(emptyForm); };
-  const openEdit = (tag: Tag) => { setEditing(tag); setForm({ name: tag.name, color: tag.color }); };
+  const openEdit = (tag: Tag) => { setEditing(tag); setForm({ name: tag.name, color: tag.color ?? '#38bdf8' }); };
   const closeModal = () => { setForm(null); setEditing(null); setError(null); };
 
   const handleSubmit = async () => {
     if (!form || !form.name.trim()) return;
+    setError(null);
     setSaving(true);
     try {
       if (editing) {
@@ -48,7 +49,7 @@ export function TagsPage() {
         await api.createTag(form);
       }
       closeModal();
-      load();
+      void load();
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -58,10 +59,11 @@ export function TagsPage() {
 
   const handleDelete = async (tag: Tag) => {
     if (!window.confirm(`Delete tag "${tag.name}"?`)) return;
+    setError(null);
     setSaving(true);
     try {
       await api.deleteTag(tag.id);
-      load();
+      void load();
     } catch (err) {
       setError((err as Error).message);
     } finally {

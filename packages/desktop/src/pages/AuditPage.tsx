@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../api/client';
 import type { AuditEntry } from '../api/types';
 import { Card } from '../components/ui/Card';
@@ -21,14 +21,19 @@ function formatTimestamp(iso: string): string {
 
 function ChangesCell({ changes }: { changes: string | null }) {
   const [expanded, setExpanded] = useState(false);
-  if (!changes) return <span style={{ color: tokens.colors.textMuted }}>—</span>;
 
-  let parsed: Record<string, { from: unknown; to: unknown }>;
-  try {
-    parsed = JSON.parse(changes);
-  } catch {
-    return <span style={{ color: tokens.colors.textMuted }}>—</span>;
-  }
+  const parsed = useMemo(() => {
+    if (!changes) return null;
+    try {
+      const result = JSON.parse(changes);
+      if (typeof result !== 'object' || result === null || Array.isArray(result)) return null;
+      return result as Record<string, { from: unknown; to: unknown }>;
+    } catch {
+      return null;
+    }
+  }, [changes]);
+
+  if (!parsed) return <span style={{ color: tokens.colors.textMuted }}>—</span>;
 
   const entries = Object.entries(parsed);
   if (entries.length === 0) return <span style={{ color: tokens.colors.textMuted }}>—</span>;

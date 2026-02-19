@@ -40,6 +40,7 @@ export function PayeesPage() {
 
   const handleSubmit = async () => {
     if (!form || !form.name.trim()) return;
+    setError(null);
     setSaving(true);
     try {
       if (editing) {
@@ -48,7 +49,7 @@ export function PayeesPage() {
         await api.createPayee(form);
       }
       closeModal();
-      load();
+      void load();
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -58,10 +59,11 @@ export function PayeesPage() {
 
   const handleDelete = async (payee: Payee) => {
     if (!window.confirm(`Delete payee "${payee.name}"?`)) return;
+    setError(null);
     setSaving(true);
     try {
       await api.deletePayee(payee.id);
-      load();
+      void load();
     } catch (err) {
       setError((err as Error).message);
     } finally {

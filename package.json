@@ -11,7 +11,8 @@
     "build:backend": "npm -w @finance/backend run build",
     "build:desktop": "npm -w @finance/desktop run build:desktop",
     "test": "npm -w @finance/backend run test:all",
-    "lint": "npm -w @finance/backend run lint"
+    "lint": "npm -w @finance/backend run lint && npm -w @finance/desktop run lint",
+    "typecheck": "npm -w @finance/backend run typecheck && npm -w @finance/desktop run typecheck"
   },
   "devDependencies": {
     "concurrently": "^9.0.0",

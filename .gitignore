@@ -22,6 +22,9 @@ npm-debug.log*
 *.sw?
 .claude
 
+# Runtime logs
+logs.txt
+
 # Screenshots
 screenshot.png
 

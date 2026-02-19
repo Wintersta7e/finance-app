@@ -55,7 +55,7 @@ A portable Windows desktop application for personal finance management. No exter
 
 ### Prerequisites
 
-- Node.js 20+
+- Node.js 22+
 
 ### Development
 

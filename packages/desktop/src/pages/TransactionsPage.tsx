@@ -27,8 +27,8 @@ export function TransactionsPage({ onDataChanged }: TransactionsPageProps) {
 
     api
       .getTransactions(formatDate(from), formatDate(to))
-      .then((data) => {
-        setTxs(data);
+      .then((result) => {
+        setTxs(result.data);
         setError(null);
       })
       .catch((err) => {

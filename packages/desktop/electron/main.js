@@ -138,6 +138,8 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
+    minWidth: 900,
+    minHeight: 600,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -166,18 +168,17 @@ function createWindow() {
   });
 }
 
-app.whenReady().then(async () => {
+app.whenReady().then(() => {
+  // Show window immediately — renderer shows splash screen while backend boots
+  createWindow();
+
   if (!isDev) {
-    try {
-      await startBackend();
-    } catch (err) {
+    startBackend().catch((err) => {
       console.error('Failed to start backend:', err);
-    }
+    });
   } else {
     console.log('Dev mode detected; expecting backend to be running separately.');
   }
-
-  createWindow();
 });
 
 app.on('before-quit', async (e) => {

@@ -31,13 +31,15 @@ async function bootstrap() {
   app.useGlobalInterceptors(new DecimalSerializerInterceptor());
   app.enableShutdownHooks();
 
-  const config = new DocumentBuilder()
-    .setTitle('Finance API')
-    .setDescription('Personal finance tracking API')
-    .setVersion('1.0')
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  if (process.env.NODE_ENV !== 'production') {
+    const config = new DocumentBuilder()
+      .setTitle('Finance API')
+      .setDescription('Personal finance tracking API')
+      .setVersion('1.0')
+      .build();
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api/docs', app, document);
+  }
 
   const port = process.env.PORT || 8080;
   await app.listen(port);

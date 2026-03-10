@@ -22,6 +22,7 @@ export interface Transaction {
   type: 'INCOME' | 'FIXED_COST' | 'VARIABLE_EXPENSE' | 'TRANSFER';
   accountId: number;
   categoryId: number | null;
+  payeeId: number | null;
   notes: string | null;
   recurringRuleId: number | null;
 }

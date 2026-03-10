@@ -1,99 +1,96 @@
-:root {
-  color-scheme: dark;
-  background-color: #18181b;
-  color: #e5e7eb;
-  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
-  line-height: 1.6;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@import "@fontsource-variable/inter";
+@import "tailwindcss";
+
+/* Neon Pulse / Living Data Theme */
+@theme {
+  /* Background colors */
+  --color-neon-bg: #06060a;
+  --color-neon-surface: #09090f;
+  --color-neon-elevated: rgba(255, 255, 255, 0.02);
+
+  /* Border colors */
+  --color-neon-border: rgba(255, 255, 255, 0.04);
+  --color-neon-border-active: rgba(255, 255, 255, 0.06);
+
+  /* Text colors */
+  --color-neon-text: #ffffff;
+  --color-neon-text-secondary: rgba(255, 255, 255, 0.45);
+  --color-neon-text-muted: rgba(255, 255, 255, 0.25);
+  --color-neon-text-faint: rgba(255, 255, 255, 0.15);
+
+  /* Accent colors */
+  --color-neon-green: #00ff88;
+  --color-neon-indigo: #818cf8;
+  --color-neon-amber: #f59e0b;
+  --color-neon-red: #ff6b6b;
+  --color-neon-orange: #f97316;
+  --color-neon-cyan: #22d3ee;
+  --color-neon-rose: #f472b6;
+
+  /* Glow shadows */
+  --shadow-glow-green: 0 0 12px rgba(0, 255, 136, 0.3);
+  --shadow-glow-indigo: 0 0 12px rgba(129, 140, 248, 0.3);
+  --shadow-glow-amber: 0 0 12px rgba(245, 158, 11, 0.3);
+  --shadow-glow-red: 0 0 12px rgba(255, 107, 107, 0.3);
+  --shadow-glow-green-sm: 0 0 6px rgba(0, 255, 136, 0.3);
+  --shadow-glow-indigo-sm: 0 0 6px rgba(129, 140, 248, 0.3);
+
+  /* Animation */
+  --animate-pulse-glow: pulse-glow 2s ease-in-out infinite;
+  --animate-spin-slow: spin 8s linear infinite;
+  --animate-spin-slow-reverse: spin 6s linear infinite reverse;
+
+  /* Font */
+  --font-sans: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
 
-* {
-  box-sizing: border-box;
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
 }
 
-body {
-  margin: 0;
-  background: #18181b;
-  color: #e5e7eb;
-  min-height: 100vh;
-}
+/* Base styles */
+@layer base {
+  html, body, #root {
+    @apply bg-neon-bg text-neon-text font-sans antialiased;
+    height: 100%;
+    margin: 0;
+    line-height: 1.5;
+  }
 
-#root {
-  min-height: 100vh;
-}
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
 
-a {
-  color: #38bdf8;
-  text-decoration: none;
-}
+  /* Form inputs */
+  input, select, textarea {
+    @apply bg-[rgba(255,255,255,0.03)] border border-neon-border-active rounded-md
+           px-3 py-1.5 text-sm text-neon-text outline-none
+           transition-all duration-150;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: rgba(0, 255, 136, 0.4);
+    box-shadow: 0 0 0 2px rgba(0, 255, 136, 0.1);
+  }
+  input::placeholder, textarea::placeholder {
+    @apply text-neon-text-muted;
+  }
 
-a:hover {
-  color: #7dd3fc;
-}
-
-h1,
-h2,
-h3,
-p {
-  margin: 0;
-}
-
-h1 {
-  font-size: 26px;
-  font-weight: 700;
-}
-
-h2 {
-  font-size: 20px;
-  font-weight: 600;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th,
-td {
-  padding: 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-th {
-  text-align: left;
-  color: #9ca3af;
-  font-size: 0.9rem;
-  letter-spacing: 0.02em;
-  font-weight: 600;
-}
-
-tr:hover td {
-  background: rgba(255, 255, 255, 0.02);
-}
-
-input,
-select,
-textarea {
-  background-color: #111827;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #e5e7eb;
-  padding: 10px 12px;
-  border-radius: 10px;
-  font-size: 0.95rem;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-input:focus,
-select:focus,
-textarea:focus {
-  outline: none;
-  border-color: rgba(56, 189, 248, 0.65);
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.16);
-}
-
-button {
-  font: inherit;
+  /* Remove number input spinners */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
 }

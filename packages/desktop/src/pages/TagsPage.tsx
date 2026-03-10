@@ -1,21 +1,20 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api/client';
 import type { Tag } from '../api/types';
-import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
-import { FormField } from '../components/ui/FormField';
-import { Modal } from '../components/ui/Modal';
-import { Page } from '../components/ui/Page';
-import { tokens } from '../theme';
+import { EmptyState } from '../components/EmptyState';
+import { SidePanel } from '../components/SidePanel';
 
-type TagForm = Omit<Tag, 'id'>;
+const ACCENT_COLORS = ['neon-green', 'neon-indigo', 'neon-amber', 'neon-cyan', 'neon-orange', 'neon-rose'];
+const ACCENT_HEX = ['#00ff88', '#818cf8', '#f59e0b', '#22d3ee', '#f97316', '#f472b6'];
 
-const emptyForm: TagForm = { name: '', color: '#38bdf8' };
+type TagForm = { name: string; color: string };
+
+const DEFAULT_COLOR = '#00ff88';
 
 export function TagsPage() {
   const [tags, setTags] = useState<Tag[]>([]);
+  const [selected, setSelected] = useState<Tag | null>(null);
   const [form, setForm] = useState<TagForm | null>(null);
-  const [editing, setEditing] = useState<Tag | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,21 +33,34 @@ export function TagsPage() {
 
   useEffect(() => { void load(); }, [load]);
 
-  const openCreate = () => { setEditing(null); setForm(emptyForm); };
-  const openEdit = (tag: Tag) => { setEditing(tag); setForm({ name: tag.name, color: tag.color ?? '#38bdf8' }); };
-  const closeModal = () => { setForm(null); setEditing(null); setError(null); };
+  const openCreate = () => {
+    setSelected(null);
+    setForm({ name: '', color: DEFAULT_COLOR });
+  };
+
+  const openEdit = (tag: Tag) => {
+    setSelected(tag);
+    setForm({ name: tag.name, color: tag.color ?? DEFAULT_COLOR });
+  };
+
+  const closePanel = () => {
+    setForm(null);
+    setSelected(null);
+    setError(null);
+  };
 
   const handleSubmit = async () => {
     if (!form || !form.name.trim()) return;
     setError(null);
     setSaving(true);
     try {
-      if (editing) {
-        await api.updateTag(editing.id, form);
+      const payload = { name: form.name, color: form.color || null };
+      if (selected) {
+        await api.updateTag(selected.id, payload);
       } else {
-        await api.createTag(form);
+        await api.createTag(payload);
       }
-      closeModal();
+      closePanel();
       void load();
     } catch (err) {
       setError((err as Error).message);
@@ -57,12 +69,14 @@ export function TagsPage() {
     }
   };
 
-  const handleDelete = async (tag: Tag) => {
-    if (!window.confirm(`Delete tag "${tag.name}"?`)) return;
+  const handleDelete = async () => {
+    if (!selected) return;
+    if (!window.confirm(`Delete tag "${selected.name}"?`)) return;
     setError(null);
     setSaving(true);
     try {
-      await api.deleteTag(tag.id);
+      await api.deleteTag(selected.id);
+      closePanel();
       void load();
     } catch (err) {
       setError((err as Error).message);
@@ -72,92 +86,180 @@ export function TagsPage() {
   };
 
   return (
-    <Page
-      title="Tags"
-      subtitle="Label transactions with custom tags"
-      actions={<Button onClick={openCreate} disabled={loading || saving}>+ Add tag</Button>}
-    >
-      <Card>
-        {error && <span style={{ color: tokens.colors.danger }}>Error: {error}</span>}
-        {loading && <span style={{ color: tokens.colors.textMuted }}>Loading tags…</span>}
-        {!loading && tags.length === 0 && <span style={{ color: tokens.colors.textMuted }}>No tags yet.</span>}
+    <div className="flex flex-col gap-5">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-lg font-semibold text-neon-text">Tags</h1>
+          <p className="text-[11px] text-neon-text-muted mt-0.5">Label transactions with custom tags</p>
+        </div>
+        <button
+          onClick={openCreate}
+          disabled={loading || saving}
+          className="flex h-8 w-8 items-center justify-center rounded-lg
+                     bg-neon-green/10 border border-neon-green/20
+                     text-neon-green text-lg font-bold
+                     hover:bg-neon-green/20 transition-colors
+                     disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          +
+        </button>
+      </div>
 
-        {tags.length > 0 && (
-          <div style={{ overflowX: 'auto', marginTop: '0.5rem' }}>
-            <table style={{ minWidth: '480px' }}>
-              <thead>
-                <tr>
-                  <th>Color</th>
-                  <th>Name</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tags.map((tag) => (
-                  <tr key={tag.id}>
-                    <td>
-                      <span
-                        style={{
-                          display: 'inline-block',
-                          width: 18,
-                          height: 18,
-                          borderRadius: tokens.radii.sm,
-                          background: tag.color || tokens.colors.accent,
-                          border: `1px solid ${tokens.colors.borderSoft}`,
-                          verticalAlign: 'middle',
-                        }}
-                      />
-                    </td>
-                    <td>{tag.name}</td>
-                    <td>
-                      <div style={{ display: 'flex', gap: '0.45rem' }}>
-                        <Button variant="ghost" onClick={() => openEdit(tag)} style={{ padding: '0.35rem 0.6rem' }}>Edit</Button>
-                        <Button variant="danger" onClick={() => handleDelete(tag)} style={{ padding: '0.35rem 0.6rem' }}>Delete</Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Card>
+      {/* Error banner */}
+      {error && !form && (
+        <div className="rounded-lg border border-neon-red/20 bg-neon-red/5 px-4 py-2.5 text-xs text-neon-red">
+          {error}
+        </div>
+      )}
 
-      <Modal
-        title={editing ? 'Edit tag' : 'Add tag'}
-        open={form !== null}
-        onClose={closeModal}
-        footer={
-          <>
-            <Button variant="ghost" onClick={closeModal} disabled={saving}>Cancel</Button>
-            <Button onClick={handleSubmit} disabled={saving || !form?.name.trim()}>{saving ? 'Saving…' : 'Save'}</Button>
-          </>
-        }
-      >
+      {/* Loading */}
+      {loading && (
+        <p className="text-xs text-neon-text-muted py-8 text-center">Loading tags...</p>
+      )}
+
+      {/* Empty state */}
+      {!loading && tags.length === 0 && (
+        <EmptyState message="No tags yet" actionLabel="Create your first tag" onAction={openCreate} />
+      )}
+
+      {/* Tag list - horizontal strips */}
+      {!loading && tags.length > 0 && (
+        <div className="flex flex-col">
+          {tags.map((tag, i) => {
+            const accent = tag.color ?? ACCENT_HEX[i % ACCENT_HEX.length];
+            const isActive = selected?.id === tag.id;
+            return (
+              <button
+                key={tag.id}
+                onClick={() => openEdit(tag)}
+                className={`group flex items-center gap-3 px-4 py-3
+                           border-l-2 text-left transition-all
+                           ${isActive
+                             ? 'bg-[rgba(255,255,255,0.04)] border-l-current'
+                             : 'border-l-transparent hover:bg-[rgba(255,255,255,0.02)] hover:border-l-current'
+                           }`}
+                style={{ borderLeftColor: isActive ? accent : undefined, ['--tw-border-opacity' as string]: 1 }}
+              >
+                {/* Color dot */}
+                <span
+                  className="h-3 w-3 shrink-0 rounded-full ring-1 ring-white/10"
+                  style={{ background: accent }}
+                />
+                {/* Name */}
+                <span className="text-sm text-neon-text">{tag.name}</span>
+                {/* Subtle hover indicator */}
+                <span className="ml-auto text-[10px] text-neon-text-muted opacity-0 group-hover:opacity-60 transition-opacity">
+                  edit
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Side Panel */}
+      <SidePanel open={form !== null} onClose={closePanel}>
         {form && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            <FormField label="Name">
-              <input value={form.name} onChange={(e) => setForm(prev => prev ? { ...prev, name: e.target.value } : prev)} />
-            </FormField>
-            <FormField label="Color">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div className="flex flex-col gap-5">
+            {/* Panel title */}
+            <h2 className="text-sm font-semibold text-neon-text">
+              {selected ? 'Edit tag' : 'New tag'}
+            </h2>
+
+            {/* Error inside panel */}
+            {error && (
+              <div className="rounded-lg border border-neon-red/20 bg-neon-red/5 px-3 py-2 text-xs text-neon-red">
+                {error}
+              </div>
+            )}
+
+            {/* Color preview */}
+            <div className="flex items-center gap-3">
+              <span
+                className="h-8 w-8 rounded-full ring-2 ring-white/10"
+                style={{ background: form.color || DEFAULT_COLOR }}
+              />
+              <span className="text-sm font-medium text-neon-text">
+                {form.name || 'Untitled'}
+              </span>
+            </div>
+
+            {/* Name input */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[9px] uppercase tracking-[2px] text-neon-text-muted">Name</label>
+              <input
+                value={form.name}
+                onChange={(e) => setForm(prev => prev ? { ...prev, name: e.target.value } : prev)}
+                placeholder="e.g. Groceries"
+                className="w-full rounded-md border border-neon-border bg-neon-elevated px-3 py-2
+                           text-sm text-neon-text placeholder:text-neon-text-muted/40
+                           focus:border-neon-border-active focus:outline-none transition-colors"
+              />
+            </div>
+
+            {/* Color picker */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[9px] uppercase tracking-[2px] text-neon-text-muted">Color</label>
+              <div className="flex items-center gap-2.5">
                 <input
                   type="color"
-                  value={form.color || '#38bdf8'}
+                  value={form.color || DEFAULT_COLOR}
                   onChange={(e) => setForm(prev => prev ? { ...prev, color: e.target.value } : prev)}
-                  style={{ width: 40, height: 34, padding: 0, border: 'none', cursor: 'pointer' }}
+                  className="h-9 w-9 cursor-pointer rounded border-0 bg-transparent p-0"
                 />
                 <input
-                  value={form.color || ''}
+                  value={form.color}
                   onChange={(e) => setForm(prev => prev ? { ...prev, color: e.target.value } : prev)}
-                  placeholder="#38bdf8"
-                  style={{ flex: 1 }}
+                  placeholder="#00ff88"
+                  className="flex-1 rounded-md border border-neon-border bg-neon-elevated px-3 py-2
+                             text-sm text-neon-text font-mono placeholder:text-neon-text-muted/40
+                             focus:border-neon-border-active focus:outline-none transition-colors"
                 />
               </div>
-            </FormField>
+              {/* Preset swatches */}
+              <div className="flex gap-1.5 mt-1">
+                {ACCENT_HEX.map((hex, i) => (
+                  <button
+                    key={ACCENT_COLORS[i]}
+                    onClick={() => setForm(prev => prev ? { ...prev, color: hex } : prev)}
+                    className={`h-5 w-5 rounded-full transition-transform hover:scale-125
+                               ${form.color === hex ? 'ring-2 ring-white/30 scale-110' : 'ring-1 ring-white/10'}`}
+                    style={{ background: hex }}
+                    title={ACCENT_COLORS[i]}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-col gap-2 mt-2">
+              <button
+                onClick={() => void handleSubmit()}
+                disabled={saving || !form.name.trim()}
+                className="w-full rounded-md bg-neon-green/10 border border-neon-green/20
+                           px-4 py-2 text-xs font-medium text-neon-green
+                           hover:bg-neon-green/20 transition-colors
+                           disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {saving ? 'Saving...' : 'Save'}
+              </button>
+              {selected && (
+                <button
+                  onClick={() => void handleDelete()}
+                  disabled={saving}
+                  className="w-full rounded-md bg-neon-red/5 border border-neon-red/15
+                             px-4 py-2 text-xs font-medium text-neon-red
+                             hover:bg-neon-red/10 transition-colors
+                             disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Delete
+                </button>
+              )}
+            </div>
           </div>
         )}
-      </Modal>
-    </Page>
+      </SidePanel>
+    </div>
   );
 }

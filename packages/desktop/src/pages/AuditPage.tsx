@@ -1,25 +1,71 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../api/client';
 import type { AuditEntry } from '../api/types';
-import { Card } from '../components/ui/Card';
-import { Page } from '../components/ui/Page';
-import { tokens } from '../theme';
+import { PillChip } from '../components/PillChip';
+import { EmptyState } from '../components/EmptyState';
+
+/* ─── constants ───────────────────────────────────────────────────── */
 
 const ACTION_COLORS: Record<string, string> = {
-  CREATE: tokens.colors.success,
-  UPDATE: tokens.colors.accent,
-  DELETE: tokens.colors.danger,
+  CREATE: 'var(--color-neon-green)',
+  UPDATE: 'var(--color-neon-amber)',
+  DELETE: 'var(--color-neon-red)',
 };
 
-function formatTimestamp(iso: string): string {
+const ACTION_DOT_CLASS: Record<string, string> = {
+  CREATE: 'bg-neon-green shadow-[0_0_6px_var(--color-neon-green)]',
+  UPDATE: 'bg-neon-amber shadow-[0_0_6px_var(--color-neon-amber)]',
+  DELETE: 'bg-neon-red shadow-[0_0_6px_var(--color-neon-red)]',
+};
+
+const ACTION_FILTERS = ['All', 'Created', 'Updated', 'Deleted'] as const;
+type ActionFilter = (typeof ACTION_FILTERS)[number];
+
+const ACTION_FILTER_MAP: Record<ActionFilter, string | null> = {
+  All: null,
+  Created: 'CREATE',
+  Updated: 'UPDATE',
+  Deleted: 'DELETE',
+};
+
+const PAGE_SIZE = 50;
+
+/* ─── helpers ─────────────────────────────────────────────────────── */
+
+function dateGroupLabel(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleString(undefined, {
-    year: 'numeric', month: 'short', day: 'numeric',
-    hour: '2-digit', minute: '2-digit',
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const target = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const diffMs = today.getTime() - target.getTime();
+  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+function formatTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString(undefined, {
+    hour: '2-digit',
+    minute: '2-digit',
   });
 }
 
-function ChangesCell({ changes }: { changes: string | null }) {
+function groupEntriesByDate(entries: AuditEntry[]): [string, AuditEntry[]][] {
+  const map = new Map<string, AuditEntry[]>();
+  for (const entry of entries) {
+    const key = entry.timestamp.slice(0, 10);
+    const arr = map.get(key);
+    if (arr) arr.push(entry);
+    else map.set(key, [entry]);
+  }
+  return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]));
+}
+
+/* ─── sub-components ──────────────────────────────────────────────── */
+
+function ChangesBlock({ changes }: { changes: string | null }) {
   const [expanded, setExpanded] = useState(false);
 
   const parsed = useMemo(() => {
@@ -33,64 +79,47 @@ function ChangesCell({ changes }: { changes: string | null }) {
     }
   }, [changes]);
 
-  if (!parsed) return <span style={{ color: tokens.colors.textMuted }}>—</span>;
+  if (!parsed) return null;
 
   const entries = Object.entries(parsed);
-  if (entries.length === 0) return <span style={{ color: tokens.colors.textMuted }}>—</span>;
-
-  if (!expanded) {
-    return (
-      <button
-        type="button"
-        onClick={() => setExpanded(true)}
-        style={{
-          background: 'none',
-          border: 'none',
-          color: tokens.colors.accent,
-          cursor: 'pointer',
-          fontWeight: 600,
-          fontSize: '0.8rem',
-          padding: 0,
-        }}
-      >
-        {entries.length} field{entries.length > 1 ? 's' : ''} changed
-      </button>
-    );
-  }
+  if (entries.length === 0) return null;
 
   return (
-    <div style={{ fontSize: '0.8rem' }}>
-      {entries.map(([field, { from, to }]) => (
-        <div key={field} style={{ marginBottom: '0.15rem' }}>
-          <span style={{ fontWeight: 600 }}>{field}:</span>{' '}
-          <span style={{ color: tokens.colors.danger }}>{String(from)}</span>{' → '}
-          <span style={{ color: tokens.colors.success }}>{String(to)}</span>
-        </div>
-      ))}
+    <div className="mt-1.5">
       <button
         type="button"
-        onClick={() => setExpanded(false)}
-        style={{
-          background: 'none',
-          border: 'none',
-          color: tokens.colors.textMuted,
-          cursor: 'pointer',
-          fontSize: '0.75rem',
-          padding: 0,
-          marginTop: '0.2rem',
-        }}
+        onClick={() => setExpanded(prev => !prev)}
+        className="text-[10px] text-neon-text-muted hover:text-neon-text-secondary transition-colors"
       >
-        collapse
+        {expanded ? 'Hide changes' : `${entries.length} field${entries.length > 1 ? 's' : ''} changed`}
       </button>
+      {expanded && (
+        <div className="mt-1.5 space-y-0.5 rounded-md bg-neon-bg/60 border border-neon-border px-3 py-2">
+          {entries.map(([field, { from, to }]) => (
+            <div key={field} className="flex items-baseline gap-2 text-[11px]">
+              <span className="font-medium text-neon-text-secondary">{field}:</span>
+              <span className="text-neon-red line-through">{String(from)}</span>
+              <span className="text-neon-text-faint">&rarr;</span>
+              <span className="text-neon-green">{String(to)}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
+/* ─── main component ──────────────────────────────────────────────── */
+
 export function AuditPage() {
   const [entries, setEntries] = useState<AuditEntry[]>([]);
-  const [limit, setLimit] = useState(50);
+  const [limit, setLimit] = useState(PAGE_SIZE);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Filters
+  const [actionFilter, setActionFilter] = useState<ActionFilter>('All');
+  const [entityTypeFilter, setEntityTypeFilter] = useState<string>('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -104,72 +133,187 @@ export function AuditPage() {
     }
   }, [limit]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  // Derive entity types from data
+  const entityTypes = useMemo(() => {
+    const set = new Set(entries.map((e) => e.entityType));
+    return [...set].sort();
+  }, [entries]);
+
+  // Apply client-side filters
+  const filtered = useMemo(() => {
+    let result = entries;
+    const actionVal = ACTION_FILTER_MAP[actionFilter];
+    if (actionVal) {
+      result = result.filter((e) => e.action === actionVal);
+    }
+    if (entityTypeFilter) {
+      result = result.filter((e) => e.entityType === entityTypeFilter);
+    }
+    return result;
+  }, [entries, actionFilter, entityTypeFilter]);
+
+  const grouped = useMemo(() => groupEntriesByDate(filtered), [filtered]);
+
+  const handleLoadMore = () => {
+    setLimit(prev => prev + PAGE_SIZE);
+  };
 
   return (
-    <Page
-      title="Audit Log"
-      subtitle="Recent changes across all entities"
-      actions={
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <label style={{ fontWeight: 600, color: tokens.colors.textMuted, fontSize: '0.85rem' }}>Show:</label>
-          <select
-            value={limit}
-            onChange={(e) => setLimit(Number(e.target.value))}
-            style={{ width: 'auto' }}
-          >
-            <option value={25}>25</option>
-            <option value={50}>50</option>
-            <option value={100}>100</option>
-          </select>
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <div className="text-[9px] uppercase tracking-[2px] text-neon-text-muted mb-1.5">
+          Activity
         </div>
-      }
-    >
-      <Card>
-        {error && <span style={{ color: tokens.colors.danger }}>Error: {error}</span>}
-        {loading && <span style={{ color: tokens.colors.textMuted }}>Loading audit log…</span>}
-        {!loading && entries.length === 0 && <span style={{ color: tokens.colors.textMuted }}>No audit entries yet.</span>}
+        <h1 className="text-2xl font-extrabold tracking-tight text-neon-text">
+          Audit Log
+        </h1>
+        <p className="mt-1 text-xs text-neon-text-muted">
+          Recent changes across all entities
+        </p>
+      </div>
 
-        {entries.length > 0 && (
-          <div style={{ overflowX: 'auto', marginTop: '0.5rem' }}>
-            <table style={{ minWidth: '720px' }}>
-              <thead>
-                <tr>
-                  <th>Timestamp</th>
-                  <th>Action</th>
-                  <th>Entity</th>
-                  <th>ID</th>
-                  <th>Changes</th>
-                </tr>
-              </thead>
-              <tbody>
-                {entries.map((entry) => (
-                  <tr key={entry.id}>
-                    <td style={{ whiteSpace: 'nowrap', fontSize: '0.85rem' }}>
-                      {formatTimestamp(entry.timestamp)}
-                    </td>
-                    <td>
-                      <span style={{
-                        fontWeight: 700,
-                        fontSize: '0.75rem',
-                        padding: '0.15rem 0.5rem',
-                        borderRadius: tokens.radii.sm,
-                        background: `${ACTION_COLORS[entry.action] || tokens.colors.textMuted}22`,
-                        color: ACTION_COLORS[entry.action] || tokens.colors.textMuted,
-                      }}>
-                        {entry.action}
-                      </span>
-                    </td>
-                    <td>{entry.entityType}</td>
-                    <td style={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>{entry.entityId}</td>
-                    <td><ChangesCell changes={entry.changes} /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+      {/* Error */}
+      {error && (
+        <div className="border-l-[3px] border-neon-red bg-neon-red/5 py-2.5 pl-4 pr-3">
+          <p className="text-xs text-neon-red">{error}</p>
+        </div>
+      )}
+
+      {/* Filter bar */}
+      <div className="flex flex-wrap items-center gap-3">
+        {/* Action filter pills */}
+        <div className="flex items-center gap-1.5">
+          {ACTION_FILTERS.map((filter) => {
+            const active = actionFilter === filter;
+            const actionKey = ACTION_FILTER_MAP[filter];
+            const color = actionKey ? ACTION_COLORS[actionKey] : undefined;
+            return (
+              <button
+                key={filter}
+                onClick={() => setActionFilter(filter)}
+                className={`rounded-full px-3 py-1 text-[10px] font-medium border transition-colors ${
+                  active
+                    ? 'border-current'
+                    : 'bg-transparent border-neon-border text-neon-text-muted hover:border-neon-border-active'
+                }`}
+                style={active && color ? { color, borderColor: color, background: `color-mix(in srgb, ${color} 10%, transparent)` } : active ? { color: 'var(--color-neon-text)', borderColor: 'var(--color-neon-border-active)', background: 'var(--color-neon-elevated)' } : undefined}
+              >
+                {filter}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Entity type dropdown */}
+        <select
+          value={entityTypeFilter}
+          onChange={(e) => setEntityTypeFilter(e.target.value)}
+          className="bg-neon-elevated border border-neon-border-active rounded-md px-2.5 py-1
+                     text-[10px] text-neon-text-secondary focus:outline-none focus:border-neon-green/30"
+        >
+          <option value="">All entity types</option>
+          {entityTypes.map((t) => (
+            <option key={t} value={t}>{t}</option>
+          ))}
+        </select>
+
+        {/* Count indicator */}
+        {!loading && (
+          <span className="text-[10px] text-neon-text-faint ml-auto">
+            {filtered.length} entries
+          </span>
         )}
-      </Card>
-    </Page>
+      </div>
+
+      {/* Loading skeleton */}
+      {loading && (
+        <div className="space-y-3 pl-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-12 animate-pulse rounded bg-neon-elevated" />
+          ))}
+        </div>
+      )}
+
+      {/* Empty state */}
+      {!loading && filtered.length === 0 && (
+        <EmptyState message="No audit entries found" />
+      )}
+
+      {/* ── Timeline ──────────────────────────────────────────────── */}
+      {!loading && grouped.length > 0 && (
+        <div className="space-y-6">
+          {grouped.map(([dateKey, dateEntries]) => (
+            <div key={dateKey}>
+              {/* Date label */}
+              <div className="text-[10px] uppercase tracking-[1.5px] text-neon-text-faint mb-3 pl-7">
+                {dateGroupLabel(dateKey)}
+              </div>
+
+              {/* Timeline entries */}
+              <div className="relative">
+                {/* Connecting line */}
+                <div className="absolute left-[7px] top-3 bottom-3 w-px bg-neon-border" />
+
+                <div className="space-y-0.5">
+                  {dateEntries.map((entry) => (
+                    <div key={entry.id} className="relative flex items-start gap-4 py-2 pl-0">
+                      {/* Dot */}
+                      <div className="relative z-10 mt-1.5 flex-shrink-0">
+                        <div
+                          className={`h-[14px] w-[14px] rounded-full border-2 border-neon-bg ${
+                            ACTION_DOT_CLASS[entry.action] ?? 'bg-neon-text-muted'
+                          }`}
+                        />
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <PillChip
+                            label={entry.action}
+                            color={ACTION_COLORS[entry.action] ?? 'var(--color-neon-text-muted)'}
+                          />
+                          <span className="text-xs font-medium text-neon-text-secondary">
+                            {entry.entityType}
+                          </span>
+                          <span className="text-[10px] font-mono text-neon-text-faint">
+                            #{entry.entityId}
+                          </span>
+                          <span className="text-[10px] text-neon-text-faint ml-auto">
+                            {formatTime(entry.timestamp)}
+                          </span>
+                        </div>
+
+                        <ChangesBlock changes={entry.changes} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {/* Load more */}
+          {entries.length >= limit && (
+            <div className="flex justify-center pt-2">
+              <button
+                onClick={handleLoadMore}
+                className="rounded-md bg-neon-elevated border border-neon-border-active
+                           px-5 py-2 text-xs text-neon-text-secondary
+                           hover:text-neon-text hover:border-neon-green/20
+                           transition-colors"
+              >
+                Load more
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

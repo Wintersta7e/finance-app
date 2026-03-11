@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { api } from '../api/client';
 import type { ImportResult } from '../api/types';
 import { PillChip } from '../components/PillChip';
+import { useIsMounted } from '../hooks/useIsMounted';
 
 /* ─── helpers ─────────────────────────────────────────────────────── */
 
@@ -34,6 +35,7 @@ const ENTITY_LABELS: Record<string, string> = {
 /* ─── component ───────────────────────────────────────────────────── */
 
 export function ExportImportPage() {
+  const isMounted = useIsMounted();
   const [exportingJson, setExportingJson] = useState(false);
   const [exportingCsv, setExportingCsv] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -47,11 +49,13 @@ export function ExportImportPage() {
     setError(null);
     try {
       const blob = await api.exportJson();
+      if (!isMounted()) return;
       downloadBlob(blob, `finance-export-${todayStamp()}.json`);
     } catch (err) {
+      if (!isMounted()) return;
       setError((err as Error).message);
     } finally {
-      setExportingJson(false);
+      if (isMounted()) setExportingJson(false);
     }
   };
 
@@ -60,11 +64,13 @@ export function ExportImportPage() {
     setError(null);
     try {
       const blob = await api.exportCsv();
+      if (!isMounted()) return;
       downloadBlob(blob, `transactions-${todayStamp()}.csv`);
     } catch (err) {
+      if (!isMounted()) return;
       setError((err as Error).message);
     } finally {
-      setExportingCsv(false);
+      if (isMounted()) setExportingCsv(false);
     }
   };
 
@@ -74,11 +80,13 @@ export function ExportImportPage() {
     setImportResult(null);
     try {
       const result = await api.importJson(file, importMode);
+      if (!isMounted()) return;
       setImportResult(result);
     } catch (err) {
+      if (!isMounted()) return;
       setError((err as Error).message);
     } finally {
-      setImporting(false);
+      if (isMounted()) setImporting(false);
     }
   };
 

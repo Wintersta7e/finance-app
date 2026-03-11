@@ -4,7 +4,7 @@ import type { Goal } from '../api/types';
 import { EmptyState } from '../components/EmptyState';
 import { OrbitalRing } from '../components/OrbitalRing';
 import { SidePanel } from '../components/SidePanel';
-import { Toast } from '../components/Toast';
+import { useIsMounted } from '../hooks/useIsMounted';
 
 const ACCENT_HEX = ['#00ff88', '#818cf8', '#f59e0b', '#22d3ee', '#f97316', '#f472b6'];
 
@@ -28,7 +28,13 @@ function daysUntil(dateStr: string): number {
   return Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-export function GoalsPage() {
+interface GoalsPageProps {
+  onDataChanged: () => void;
+  showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
+}
+
+export function GoalsPage({ onDataChanged, showToast }: GoalsPageProps) {
+  const isMounted = useIsMounted();
   const [goals, setGoals] = useState<Goal[]>([]);
   const [selected, setSelected] = useState<Goal | null>(null);
   const [form, setForm] = useState<GoalForm | null>(null);
@@ -37,7 +43,6 @@ export function GoalsPage() {
   const [saving, setSaving] = useState(false);
   const [contributing, setContributing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
   // Key to force OrbitalRing remount for animation replay
   const [ringKey, setRingKey] = useState(0);
 
@@ -45,6 +50,7 @@ export function GoalsPage() {
     setLoading(true);
     try {
       const data = await api.getGoals();
+      if (!isMounted()) return;
       setGoals(data);
       // If a goal is selected, update it with fresh data
       setSelected(prev => {
@@ -53,11 +59,12 @@ export function GoalsPage() {
       });
       setError(null);
     } catch (err) {
+      if (!isMounted()) return;
       setError((err as Error).message);
     } finally {
-      setLoading(false);
+      if (isMounted()) setLoading(false);
     }
-  }, []);
+  }, [isMounted]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -109,6 +116,7 @@ export function GoalsPage() {
         await api.createGoal(payload);
       }
       closePanel();
+      onDataChanged();
       void load();
     } catch (err) {
       setError((err as Error).message);
@@ -125,6 +133,7 @@ export function GoalsPage() {
     try {
       await api.deleteGoal(selected.id);
       closePanel();
+      onDataChanged();
       void load();
     } catch (err) {
       setError((err as Error).message);
@@ -145,8 +154,9 @@ export function GoalsPage() {
     try {
       await api.contributeToGoal(selected.id, amount);
       setContributeAmount('');
-      setToast(`+${formatCurrency(amount)} contributed`);
+      showToast(`+${formatCurrency(amount)} contributed`, 'success');
       setRingKey(prev => prev + 1);
+      onDataChanged();
       void load();
     } catch (err) {
       setError((err as Error).message);
@@ -461,13 +471,6 @@ export function GoalsPage() {
           </div>
         )}
       </SidePanel>
-
-      {/* Toast feedback for contributions */}
-      <Toast
-        message={toast}
-        type="success"
-        onDismiss={() => setToast(null)}
-      />
     </div>
   );
 }

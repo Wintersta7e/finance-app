@@ -6,6 +6,7 @@ import { InsightBlock } from '../components/InsightBlock';
 import { MetricStrip } from '../components/MetricStrip';
 import { PillChip } from '../components/PillChip';
 import { SidePanel } from '../components/SidePanel';
+import { useIsMounted } from '../hooks/useIsMounted';
 
 /* ── Palette ─────────────────────────────────────────── */
 const ACCENT_COLORS = ['neon-green', 'neon-indigo', 'neon-amber', 'neon-cyan', 'neon-orange', 'neon-rose'];
@@ -99,6 +100,7 @@ function isDueOrPast(dateStr: string | null): boolean {
 
 /* ── Page ────────────────────────────────────────────── */
 export function RecurringRulesPage() {
+  const isMounted = useIsMounted();
   const [rules, setRules] = useState<RecurringRule[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -123,16 +125,18 @@ export function RecurringRulesPage() {
         api.getAccounts(),
         api.getCategories(),
       ]);
+      if (!isMounted()) return;
       setRules(r);
       setAccounts(a);
       setCategories(c);
       setError(null);
     } catch (err) {
+      if (!isMounted()) return;
       setError((err as Error).message);
     } finally {
-      setLoading(false);
+      if (isMounted()) setLoading(false);
     }
-  }, []);
+  }, [isMounted]);
 
   useEffect(() => {
     void load();

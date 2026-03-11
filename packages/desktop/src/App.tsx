@@ -62,7 +62,7 @@ export default function App() {
   function renderPage() {
     switch (page) {
       case 'dashboard':
-        return <DashboardPage analyticsRefreshToken={refreshToken} onDataChanged={onDataChanged} />;
+        return <DashboardPage analyticsRefreshToken={refreshToken} onDataChanged={onDataChanged} onNavigate={setPage} />;
       case 'transactions':
         return <TransactionsPage onDataChanged={onDataChanged} />;
       case 'accounts':
@@ -80,7 +80,7 @@ export default function App() {
       case 'payees':
         return <PayeesPage />;
       case 'goals':
-        return <GoalsPage />;
+        return <GoalsPage onDataChanged={onDataChanged} showToast={showToast} />;
       case 'export-import':
         return <ExportImportPage />;
       case 'audit':

@@ -14,6 +14,7 @@ import { SparkBars } from '../components/SparkBars';
 import { MetricStrip } from '../components/MetricStrip';
 import { SidePanel } from '../components/SidePanel';
 import { EmptyState } from '../components/EmptyState';
+import { useIsMounted } from '../hooks/useIsMounted';
 
 /* ─── constants ─────────────────────────────────────────────────────── */
 
@@ -122,6 +123,7 @@ interface DashboardData {
 /* ─── component ─────────────────────────────────────────────────────── */
 
 export function DashboardPage({ analyticsRefreshToken, onDataChanged, onNavigate }: DashboardPageProps) {
+  const isMounted = useIsMounted();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -136,6 +138,9 @@ export function DashboardPage({ analyticsRefreshToken, onDataChanged, onNavigate
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const successTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // CR-29: clear successTimer on unmount
+  useEffect(() => { return () => { if (successTimer.current) clearTimeout(successTimer.current); }; }, []);
 
   /* ── data loading ────────────────────────────────────────────────── */
 
@@ -173,6 +178,8 @@ export function DashboardPage({ analyticsRefreshToken, onDataChanged, onNavigate
           ...historyRequests,
         ]);
 
+      if (!isMounted()) return;
+
       const latestNetWorth =
         netWorthResult.length > 0
           ? netWorthResult[netWorthResult.length - 1].balance
@@ -187,11 +194,12 @@ export function DashboardPage({ analyticsRefreshToken, onDataChanged, onNavigate
         netWorth: latestNetWorth,
       });
     } catch (err) {
+      if (!isMounted()) return;
       setError(err instanceof Error ? err.message : 'Failed to load dashboard');
     } finally {
-      setLoading(false);
+      if (isMounted()) setLoading(false);
     }
-  }, []);
+  }, [isMounted]);
 
   useEffect(() => {
     void load();

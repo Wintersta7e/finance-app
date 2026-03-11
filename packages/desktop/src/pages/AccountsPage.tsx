@@ -4,6 +4,7 @@ import type { Account } from '../api/types';
 import { SidePanel } from '../components/SidePanel';
 import { PillChip } from '../components/PillChip';
 import { EmptyState } from '../components/EmptyState';
+import { useIsMounted } from '../hooks/useIsMounted';
 
 const ACCENT_COLORS = ['neon-green', 'neon-indigo', 'neon-amber', 'neon-cyan', 'neon-orange', 'neon-rose'] as const;
 
@@ -32,6 +33,7 @@ function accentForIndex(i: number): string {
 }
 
 export function AccountsPage() {
+  const isMounted = useIsMounted();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,14 +44,17 @@ export function AccountsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setAccounts(await api.getAccounts());
+      const data = await api.getAccounts();
+      if (!isMounted()) return;
+      setAccounts(data);
       setError(null);
     } catch (err) {
+      if (!isMounted()) return;
       setError((err as Error).message);
     } finally {
-      setLoading(false);
+      if (isMounted()) setLoading(false);
     }
-  }, []);
+  }, [isMounted]);
 
   useEffect(() => {
     void load();

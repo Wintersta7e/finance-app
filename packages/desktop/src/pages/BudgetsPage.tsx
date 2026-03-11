@@ -8,6 +8,7 @@ import { MetricStrip } from '../components/MetricStrip';
 import { OrbitalRing } from '../components/OrbitalRing';
 import { PillChip } from '../components/PillChip';
 import { SidePanel } from '../components/SidePanel';
+import { useIsMounted } from '../hooks/useIsMounted';
 
 /* ── Palette ─────────────────────────────────────────── */
 const ACCENT_COLORS = ['neon-green', 'neon-indigo', 'neon-amber', 'neon-cyan', 'neon-orange', 'neon-rose'];
@@ -68,6 +69,7 @@ interface BudgetRow {
 
 /* ── Page ────────────────────────────────────────────── */
 export function BudgetsPage() {
+  const isMounted = useIsMounted();
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [actuals, setActuals] = useState<BudgetVsActual[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -124,16 +126,18 @@ export function BudgetsPage() {
         api.getBudgetVsActual(year, month),
         api.getCategories(),
       ]);
+      if (!isMounted()) return;
       setBudgets(b);
       setActuals(a);
       setCategories(c);
       setError(null);
     } catch (err) {
+      if (!isMounted()) return;
       setError((err as Error).message);
     } finally {
-      setLoading(false);
+      if (isMounted()) setLoading(false);
     }
-  }, [year, month]);
+  }, [year, month, isMounted]);
 
   useEffect(() => {
     void load();

@@ -3,12 +3,14 @@ import { api } from '../api/client';
 import type { Payee } from '../api/types';
 import { EmptyState } from '../components/EmptyState';
 import { SidePanel } from '../components/SidePanel';
+import { useIsMounted } from '../hooks/useIsMounted';
 
 const ACCENT_HEX = ['#00ff88', '#818cf8', '#f59e0b', '#22d3ee', '#f97316', '#f472b6'];
 
 type PayeeForm = { name: string; notes: string };
 
 export function PayeesPage() {
+  const isMounted = useIsMounted();
   const [payees, setPayees] = useState<Payee[]>([]);
   const [selected, setSelected] = useState<Payee | null>(null);
   const [form, setForm] = useState<PayeeForm | null>(null);
@@ -19,14 +21,17 @@ export function PayeesPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setPayees(await api.getPayees());
+      const data = await api.getPayees();
+      if (!isMounted()) return;
+      setPayees(data);
       setError(null);
     } catch (err) {
+      if (!isMounted()) return;
       setError((err as Error).message);
     } finally {
-      setLoading(false);
+      if (isMounted()) setLoading(false);
     }
-  }, []);
+  }, [isMounted]);
 
   useEffect(() => { void load(); }, [load]);
 

@@ -6,6 +6,7 @@ import { InsightBlock } from '../components/InsightBlock';
 import { PillChip } from '../components/PillChip';
 import { EmptyState } from '../components/EmptyState';
 import { DateGroupedList } from '../components/DateGroupedList';
+import { useIsMounted } from '../hooks/useIsMounted';
 
 /* ─── Constants ───────────────────────────────────────────────────────── */
 
@@ -120,6 +121,8 @@ interface TransactionsPageProps {
 }
 
 export function TransactionsPage({ onDataChanged }: TransactionsPageProps) {
+  const isMounted = useIsMounted();
+
   /* ── Reference data ── */
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -177,26 +180,39 @@ export function TransactionsPage({ onDataChanged }: TransactionsPageProps) {
   }, [recurringRules]);
 
   /* ── Load reference data ── */
-  const refDataLoaded = useRef(false);
+  const [refDataToken, setRefDataToken] = useState(0);
   useEffect(() => {
-    if (refDataLoaded.current) return;
-    refDataLoaded.current = true;
-    void Promise.all([
-      api.getAccounts().then(setAccounts),
-      api.getCategories().then(setCategories),
-      api.getPayees().then(setPayees),
-      api.getRecurringRules().then(setRecurringRules),
-    ]);
-  }, []);
+    void (async () => {
+      try {
+        const [accts, cats, pays, rules] = await Promise.all([
+          api.getAccounts(),
+          api.getCategories(),
+          api.getPayees(),
+          api.getRecurringRules(),
+        ]);
+        if (!isMounted()) return;
+        setAccounts(accts);
+        setCategories(cats);
+        setPayees(pays);
+        setRecurringRules(rules);
+      } catch {
+        // Reference data load failure is non-fatal; transactions still load
+      }
+    })();
+  }, [refDataToken, isMounted]);
 
   /* ── Load transactions ── */
+  const loadingRef = useRef(false);
   const loadTransactions = useCallback(
     (pageNum: number) => {
+      if (loadingRef.current) return;
+      loadingRef.current = true;
       setLoading(true);
       const { from, to } = monthRange(viewYear, viewMonth);
       void api
         .getTransactions(from, to, PAGE_SIZE, pageNum)
         .then((result) => {
+          if (!isMounted()) return;
           if (pageNum === 1) {
             setTransactions(result.data);
           } else {
@@ -204,9 +220,12 @@ export function TransactionsPage({ onDataChanged }: TransactionsPageProps) {
           }
           setTotal(result.total);
         })
-        .finally(() => setLoading(false));
+        .finally(() => {
+          loadingRef.current = false;
+          if (isMounted()) setLoading(false);
+        });
     },
-    [viewYear, viewMonth],
+    [viewYear, viewMonth, isMounted],
   );
 
   useEffect(() => {
@@ -321,6 +340,7 @@ export function TransactionsPage({ onDataChanged }: TransactionsPageProps) {
       closePanel();
       setPage(1);
       loadTransactions(1);
+      setRefDataToken((t) => t + 1);
       onDataChanged();
     } catch (err) {
       setPanelError((err as Error).message);
@@ -342,6 +362,7 @@ export function TransactionsPage({ onDataChanged }: TransactionsPageProps) {
       closePanel();
       setPage(1);
       loadTransactions(1);
+      setRefDataToken((t) => t + 1);
       onDataChanged();
     } catch (err) {
       setPanelError((err as Error).message);

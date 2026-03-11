@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import { api } from '../api/client';
 import type { CategoryAmount, MonthSummary, NetWorthPoint } from '../api/types';
+import { useIsMounted } from '../hooks/useIsMounted';
 
 /* ── Palette ────────────────────────────────────────────────── */
 
@@ -93,6 +94,7 @@ interface AnalyticsPageProps {
 }
 
 export function AnalyticsPage({ analyticsRefreshToken }: AnalyticsPageProps) {
+  const isMounted = useIsMounted();
   const [netWorth, setNetWorth] = useState<NetWorthPoint[]>([]);
   const [categories, setCategories] = useState<CategoryAmount[]>([]);
   const [savingsData, setSavingsData] = useState<SavingsMonthEntry[]>([]);
@@ -133,6 +135,8 @@ export function AnalyticsPage({ analyticsRefreshToken }: AnalyticsPageProps) {
         ...savingsMonths.map((m) => api.getMonthSummary(m.year, m.month)),
       ]);
 
+      if (!isMounted()) return;
+
       setNetWorth(nwData);
       setCategories(catData);
       setCurrentMonth(curSummary);
@@ -147,11 +151,12 @@ export function AnalyticsPage({ analyticsRefreshToken }: AnalyticsPageProps) {
         })),
       );
     } catch (err) {
+      if (!isMounted()) return;
       setError((err as Error).message);
     } finally {
-      setLoading(false);
+      if (isMounted()) setLoading(false);
     }
-  }, []);
+  }, [isMounted]);
 
   useEffect(() => {
     void load();

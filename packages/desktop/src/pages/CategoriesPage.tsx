@@ -4,6 +4,7 @@ import type { Category, CategoryAmount } from '../api/types';
 import { SidePanel } from '../components/SidePanel';
 import { PillChip } from '../components/PillChip';
 import { EmptyState } from '../components/EmptyState';
+import { useIsMounted } from '../hooks/useIsMounted';
 
 const ACCENT_COLORS = ['neon-green', 'neon-indigo', 'neon-amber', 'neon-cyan', 'neon-orange', 'neon-rose'] as const;
 
@@ -38,6 +39,7 @@ function accentForId(id: number): string {
 }
 
 export function CategoriesPage() {
+  const isMounted = useIsMounted();
   const [categories, setCategories] = useState<Category[]>([]);
   const [breakdown, setBreakdown] = useState<CategoryAmount[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,15 +59,17 @@ export function CategoriesPage() {
         api.getCategories(),
         api.getCategoryBreakdown(year, month),
       ]);
+      if (!isMounted()) return;
       setCategories(cats);
       setBreakdown(bd);
       setError(null);
     } catch (err) {
+      if (!isMounted()) return;
       setError((err as Error).message);
     } finally {
-      setLoading(false);
+      if (isMounted()) setLoading(false);
     }
-  }, [year, month]);
+  }, [year, month, isMounted]);
 
   useEffect(() => {
     void load();

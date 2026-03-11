@@ -3,6 +3,7 @@ import { api } from '../api/client';
 import type { Tag } from '../api/types';
 import { EmptyState } from '../components/EmptyState';
 import { SidePanel } from '../components/SidePanel';
+import { useIsMounted } from '../hooks/useIsMounted';
 
 const ACCENT_COLORS = ['neon-green', 'neon-indigo', 'neon-amber', 'neon-cyan', 'neon-orange', 'neon-rose'];
 const ACCENT_HEX = ['#00ff88', '#818cf8', '#f59e0b', '#22d3ee', '#f97316', '#f472b6'];
@@ -12,6 +13,7 @@ type TagForm = { name: string; color: string };
 const DEFAULT_COLOR = '#00ff88';
 
 export function TagsPage() {
+  const isMounted = useIsMounted();
   const [tags, setTags] = useState<Tag[]>([]);
   const [selected, setSelected] = useState<Tag | null>(null);
   const [form, setForm] = useState<TagForm | null>(null);
@@ -22,14 +24,17 @@ export function TagsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setTags(await api.getTags());
+      const data = await api.getTags();
+      if (!isMounted()) return;
+      setTags(data);
       setError(null);
     } catch (err) {
+      if (!isMounted()) return;
       setError((err as Error).message);
     } finally {
-      setLoading(false);
+      if (isMounted()) setLoading(false);
     }
-  }, []);
+  }, [isMounted]);
 
   useEffect(() => { void load(); }, [load]);
 

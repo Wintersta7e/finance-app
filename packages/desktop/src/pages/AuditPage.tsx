@@ -3,6 +3,7 @@ import { api } from '../api/client';
 import type { AuditEntry } from '../api/types';
 import { PillChip } from '../components/PillChip';
 import { EmptyState } from '../components/EmptyState';
+import { useIsMounted } from '../hooks/useIsMounted';
 
 /* ─── constants ───────────────────────────────────────────────────── */
 
@@ -112,6 +113,7 @@ function ChangesBlock({ changes }: { changes: string | null }) {
 /* ─── main component ──────────────────────────────────────────────── */
 
 export function AuditPage() {
+  const isMounted = useIsMounted();
   const [entries, setEntries] = useState<AuditEntry[]>([]);
   const [limit, setLimit] = useState(PAGE_SIZE);
   const [loading, setLoading] = useState(true);
@@ -124,14 +126,17 @@ export function AuditPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setEntries(await api.getRecentAudit(limit));
+      const data = await api.getRecentAudit(limit);
+      if (!isMounted()) return;
+      setEntries(data);
       setError(null);
     } catch (err) {
+      if (!isMounted()) return;
       setError((err as Error).message);
     } finally {
-      setLoading(false);
+      if (isMounted()) setLoading(false);
     }
-  }, [limit]);
+  }, [limit, isMounted]);
 
   useEffect(() => {
     void load();

@@ -95,18 +95,24 @@ export function CommandPalette({ open, onClose, onNavigate, onAction }: CommandP
     }
   }
 
-  // Group items by section
-  const sections = useMemo(() => {
-    const map = new Map<string, PaletteItem[]>();
+  // Group items by section with precomputed flat indices
+  const sectionData = useMemo(() => {
+    const result: Array<{ section: string; items: Array<{ item: PaletteItem; flatIdx: number }> }> = [];
+    const sectionMap = new Map<string, PaletteItem[]>();
     for (const item of items) {
-      const list = map.get(item.section) ?? [];
+      const list = sectionMap.get(item.section) ?? [];
       list.push(item);
-      map.set(item.section, list);
+      sectionMap.set(item.section, list);
     }
-    return map;
+    let idx = 0;
+    for (const [section, sectionItems] of sectionMap) {
+      result.push({
+        section,
+        items: sectionItems.map((item) => ({ item, flatIdx: idx++ })),
+      });
+    }
+    return result;
   }, [items]);
-
-  let flatIndex = 0;
 
   return (
     <AnimatePresence>
@@ -145,27 +151,24 @@ export function CommandPalette({ open, onClose, onNavigate, onAction }: CommandP
                   No results found
                 </p>
               )}
-              {[...sections.entries()].map(([section, sectionItems]) => (
+              {sectionData.map(({ section, items: sectionItems }) => (
                 <div key={section}>
                   <p className="px-4 py-1 text-[9px] uppercase tracking-widest text-neon-text-muted">
                     {section}
                   </p>
-                  {sectionItems.map((item) => {
-                    const idx = flatIndex++;
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={item.action}
-                        className={`flex w-full items-center px-4 py-2 text-xs transition-colors
-                          ${idx === selectedIndex
-                            ? 'bg-[rgba(0,255,136,0.08)] text-neon-green'
-                            : 'text-neon-text-secondary hover:bg-[rgba(255,255,255,0.03)]'
-                          }`}
-                      >
-                        {item.label}
-                      </button>
-                    );
-                  })}
+                  {sectionItems.map(({ item, flatIdx }) => (
+                    <button
+                      key={item.id}
+                      onClick={item.action}
+                      className={`flex w-full items-center px-4 py-2 text-xs transition-colors
+                        ${flatIdx === selectedIndex
+                          ? 'bg-[rgba(0,255,136,0.08)] text-neon-green'
+                          : 'text-neon-text-secondary hover:bg-[rgba(255,255,255,0.03)]'
+                        }`}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
                 </div>
               ))}
             </div>

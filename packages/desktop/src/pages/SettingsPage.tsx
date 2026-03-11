@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api/client';
 import type { AppSettings } from '../api/types';
+import { useIsMounted } from '../hooks/useIsMounted';
 
 interface SettingsPageProps {
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
@@ -15,6 +16,7 @@ interface SettingsForm {
 }
 
 export function SettingsPage({ showToast }: SettingsPageProps) {
+  const isMounted = useIsMounted();
   const [form, setForm] = useState<SettingsForm | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -24,6 +26,7 @@ export function SettingsPage({ showToast }: SettingsPageProps) {
     setLoading(true);
     try {
       const settings: AppSettings = await api.getSettings();
+      if (!isMounted()) return;
       setForm({
         currencyCode: settings.currencyCode,
         firstDayOfMonth: settings.firstDayOfMonth,
@@ -31,11 +34,12 @@ export function SettingsPage({ showToast }: SettingsPageProps) {
       });
       setError(null);
     } catch (err) {
+      if (!isMounted()) return;
       setError((err as Error).message);
     } finally {
-      setLoading(false);
+      if (isMounted()) setLoading(false);
     }
-  }, []);
+  }, [isMounted]);
 
   useEffect(() => {
     void load();

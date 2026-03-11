@@ -131,9 +131,11 @@ function hasSemicolonInQuotedString(sql) {
   for (let i = 0; i < sql.length; i++) {
     const ch = sql[i];
     if (ch === "'" && !inDouble) {
-      inSingle = !inSingle;
+      if (inSingle && sql[i + 1] === "'") { i++; } // skip escaped quote ''
+      else { inSingle = !inSingle; }
     } else if (ch === '"' && !inSingle) {
-      inDouble = !inDouble;
+      if (inDouble && sql[i + 1] === '"') { i++; } // skip escaped quote ""
+      else { inDouble = !inDouble; }
     } else if (ch === ';' && (inSingle || inDouble)) {
       return true;
     }
@@ -288,7 +290,9 @@ async function startBackend() {
     });
 
     // CR-07: Write PID file so we can kill orphans on next launch
-    writePidFile(backendProc.pid);
+    if (backendProc.pid !== undefined) {
+      writePidFile(backendProc.pid);
+    }
 
     if (backendProc.stdout) {
       backendProc.stdout.on('data', (data) => {

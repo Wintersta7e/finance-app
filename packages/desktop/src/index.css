@@ -53,6 +53,7 @@
 @layer base {
   html, body, #root {
     @apply bg-neon-bg text-neon-text font-sans antialiased;
+    color-scheme: dark;
     height: 100%;
     margin: 0;
     line-height: 1.5;

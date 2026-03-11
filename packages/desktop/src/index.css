@@ -80,6 +80,11 @@
            px-3 py-1.5 text-sm text-neon-text outline-none
            transition-all duration-150;
   }
+  /* Force dark dropdown options — Chromium ignores color-scheme for <option> */
+  option {
+    background-color: #131318;
+    color: #ffffff;
+  }
   input:focus, select:focus, textarea:focus {
     border-color: rgba(0, 255, 136, 0.4);
     box-shadow: 0 0 0 2px rgba(0, 255, 136, 0.1);

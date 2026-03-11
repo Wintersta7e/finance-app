@@ -1,6 +1,5 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/http-exception.filter';
 import { DecimalSerializerInterceptor } from './common/interceptors/decimal-serializer.interceptor';
@@ -32,6 +31,7 @@ async function bootstrap() {
   app.enableShutdownHooks();
 
   if (process.env.NODE_ENV !== 'production') {
+    const { SwaggerModule, DocumentBuilder } = await import('@nestjs/swagger');
     const config = new DocumentBuilder()
       .setTitle('Finance API')
       .setDescription('Personal finance tracking API')

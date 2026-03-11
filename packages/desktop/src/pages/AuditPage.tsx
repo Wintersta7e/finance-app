@@ -308,12 +308,13 @@ export function AuditPage() {
             <div className="flex justify-center pt-2">
               <button
                 onClick={handleLoadMore}
+                disabled={loading}
                 className="rounded-md bg-neon-elevated border border-neon-border-active
                            px-5 py-2 text-xs text-neon-text-secondary
                            hover:text-neon-text hover:border-neon-green/20
-                           transition-colors"
+                           transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                Load more
+                {loading ? 'Loading...' : 'Load more'}
               </button>
             </div>
           )}

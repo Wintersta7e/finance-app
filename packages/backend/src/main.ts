@@ -15,7 +15,7 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
   app.enableCors({
     origin: process.env.NODE_ENV === 'production'
-      ? ['null', 'file://']  // Electron file:// sends Origin: null
+      ? ['null']  // Electron file:// sends Origin: null
       : ['http://localhost:5173', 'http://127.0.0.1:5173'],
   });
 
@@ -46,10 +46,14 @@ async function bootstrap() {
   }
 
   if (process.send) {
-    process.on('message', async (msg) => {
+    process.on('message', (msg) => {
       if (msg === 'shutdown') {
-        await app.close();
-        process.exit(0);
+        app.close()
+          .then(() => process.exit(0))
+          .catch((err) => {
+            console.error('Graceful shutdown failed:', err);
+            process.exit(1);
+          });
       }
     });
   }

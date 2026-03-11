@@ -113,7 +113,7 @@ export class ExportService {
         t.category?.name || '',
         t.payee?.name || '',
         t.notes || '',
-      ].map(this.escapeCsvField).join(',');
+      ].map((f) => this.escapeCsvField(f)).join(',');
     });
 
     return [headers.join(','), ...rows].join('\n');
@@ -234,7 +234,7 @@ export class ExportService {
           ? this.resolveId(payeeIdMap, transaction.payeeId, 'payee', mode)
           : null;
 
-        await tx.transaction.create({
+        const createdTx = await tx.transaction.create({
           data: {
             date: new Date(transaction.date),
             amount: transaction.amount,
@@ -245,6 +245,24 @@ export class ExportService {
             payeeId,
           },
         });
+
+        // Restore tag associations from exported data
+        if (Array.isArray(transaction.tags)) {
+          for (const tt of transaction.tags) {
+            const mappedTagId = mode === 'replace'
+              ? tagIdMap.get(tt.tagId)
+              : (tagIdMap.get(tt.tagId) ?? tt.tagId);
+            if (mappedTagId !== undefined) {
+              await tx.transactionTag.create({
+                data: {
+                  transactionId: createdTx.id,
+                  tagId: mappedTagId,
+                },
+              });
+            }
+          }
+        }
+
         summary.imported.transactions++;
       }
 

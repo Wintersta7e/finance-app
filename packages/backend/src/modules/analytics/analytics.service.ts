@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Decimal } from '@prisma/client/runtime/library';
 import {
@@ -109,6 +109,10 @@ export class AnalyticsService {
   }
 
   async getNetWorthTrend(from: Date, to: Date): Promise<NetWorthPointDto[]> {
+    if (to < from) {
+      throw new BadRequestException('to must be on or after from');
+    }
+
     // Limit date range to prevent excessive queries
     const daysDiff = Math.ceil((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24)) + 1;
     const effectiveDays = Math.min(daysDiff, AnalyticsService.MAX_NET_WORTH_DAYS);
@@ -123,8 +127,8 @@ export class AnalyticsService {
     for (let i = 0; i < effectiveDays; i++) {
       const dayOffset = Math.floor(i * step);
       const date = new Date(from);
-      date.setDate(date.getDate() + dayOffset);
-      date.setHours(23, 59, 59, 999);
+      date.setUTCDate(date.getUTCDate() + dayOffset);
+      date.setUTCHours(23, 59, 59, 999);
       sampleDates.push(date);
     }
 
@@ -144,8 +148,8 @@ export class AnalyticsService {
     // 2. Fetch the cumulative transaction sum up to the day before the first sample date
     const firstDate = sampleDates[0];
     const dayBeforeFirst = new Date(firstDate);
-    dayBeforeFirst.setDate(dayBeforeFirst.getDate() - 1);
-    dayBeforeFirst.setHours(23, 59, 59, 999);
+    dayBeforeFirst.setUTCDate(dayBeforeFirst.getUTCDate() - 1);
+    dayBeforeFirst.setUTCHours(23, 59, 59, 999);
 
     const priorResult = await this.prisma.transaction.aggregate({
       where: {

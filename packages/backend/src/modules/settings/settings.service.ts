@@ -15,10 +15,10 @@ export class SettingsService {
   }
 
   async updateSettings(dto: UpdateSettingsDto) {
-    await this.getSettings();
-    return this.prisma.appSettings.update({
+    return this.prisma.appSettings.upsert({
       where: { id: 1 },
-      data: dto,
+      update: dto,
+      create: { id: 1, ...dto },
     });
   }
 }

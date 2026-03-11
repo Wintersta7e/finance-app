@@ -2,11 +2,13 @@
 
 Personal finance tracking desktop app — track income, expenses, budgets, and savings goals with everything running locally.
 
-[![CI](https://github.com/Wintersta7e/finance-app/actions/workflows/ci.yml/badge.svg)](https://github.com/Wintersta7e/finance-app/actions/workflows/ci.yml)
 ![Electron](https://img.shields.io/badge/Electron-40-47848F?logo=electron)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)
 ![NestJS](https://img.shields.io/badge/NestJS-11-E0234E?logo=nestjs)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss)
+![Framer Motion](https://img.shields.io/badge/Framer_Motion-12-0055FF?logo=framer)
+![SQLite](https://img.shields.io/badge/SQLite-3-003B57?logo=sqlite)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
 
 ## Overview
@@ -35,17 +37,20 @@ A portable Windows desktop application for personal finance management. No exter
 
 ### Additional
 - **Tags & Payees** — label and organize transactions
-- **Savings Goals** — track progress with contributions
+- **Savings Goals** — track progress toward targets with contributions
 - **Export/Import** — JSON full backup, CSV transaction export, restore with replace or merge
-- **Audit Log** — automatic tracking of all data changes
-- **Swagger Docs** — full API documentation at `/api/docs`
+- **Audit Log** — automatic tracking of all data changes with expandable diffs
+- **Settings** — currency, first day of month/week preferences
+- **Command Palette** — quick keyboard navigation (`Ctrl+K`)
+- **Swagger Docs** — full API documentation at `/api/docs` (dev mode)
 
 ## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
-| Desktop | [Electron](https://electronjs.org) |
+| Desktop | [Electron 40](https://electronjs.org) |
 | Frontend | [React 19](https://react.dev) + [TypeScript](https://typescriptlang.org) + [Vite](https://vite.dev) |
+| Styling | [Tailwind CSS 4](https://tailwindcss.com) + [Framer Motion](https://motion.dev) |
 | Backend | [NestJS 11](https://nestjs.com) |
 | ORM | [Prisma 6](https://prisma.io) |
 | Database | SQLite (file-based, portable) |
@@ -111,10 +116,10 @@ packages/
 └── desktop/                Electron + React frontend
     ├── electron/           Main process (spawns backend via fork)
     └── src/
-        ├── pages/          Route pages (7 total)
-        ├── components/     UI primitives + chart wrappers
-        ├── api/            Backend client with retry logic
-        └── hooks/          Shared React hooks
+        ├── pages/          Route pages (13 total)
+        ├── components/     UI primitives (CommandPalette, SidePanel, SparkLine, etc.)
+        ├── api/            Backend client
+        └── hooks/          Shared React hooks (useIsMounted, useCategories, etc.)
 ```
 
 ## API

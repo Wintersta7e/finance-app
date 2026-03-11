@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api/client';
 import type { Goal } from '../api/types';
-import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
-import { FormField } from '../components/ui/FormField';
-import { Modal } from '../components/ui/Modal';
-import { Page } from '../components/ui/Page';
-import { tokens } from '../theme';
+import { EmptyState } from '../components/EmptyState';
+import { OrbitalRing } from '../components/OrbitalRing';
+import { SidePanel } from '../components/SidePanel';
+import { useIsMounted } from '../hooks/useIsMounted';
+
+const ACCENT_HEX = ['#00ff88', '#818cf8', '#f59e0b', '#22d3ee', '#f97316', '#f472b6'];
 
 type GoalForm = {
   name: string;
@@ -15,48 +15,92 @@ type GoalForm = {
   color: string;
 };
 
-const emptyForm: GoalForm = { name: '', targetAmount: '', targetDate: '', color: '#22d3ee' };
+const emptyForm: GoalForm = { name: '', targetAmount: '', targetDate: '', color: '#00ff88' };
 
-export function GoalsPage() {
+function formatCurrency(n: number): string {
+  return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function daysUntil(dateStr: string): number {
+  const target = new Date(dateStr + 'T00:00:00');
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  return Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+interface GoalsPageProps {
+  onDataChanged: () => void;
+  showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
+}
+
+export function GoalsPage({ onDataChanged, showToast }: GoalsPageProps) {
+  const isMounted = useIsMounted();
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [selected, setSelected] = useState<Goal | null>(null);
   const [form, setForm] = useState<GoalForm | null>(null);
-  const [editing, setEditing] = useState<Goal | null>(null);
-  const [contributeGoal, setContributeGoal] = useState<Goal | null>(null);
   const [contributeAmount, setContributeAmount] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [contributing, setContributing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Key to force OrbitalRing remount for animation replay
+  const [ringKey, setRingKey] = useState(0);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setGoals(await api.getGoals());
+      const data = await api.getGoals();
+      if (!isMounted()) return;
+      setGoals(data);
+      // If a goal is selected, update it with fresh data
+      setSelected(prev => {
+        if (!prev) return null;
+        return data.find(g => g.id === prev.id) ?? null;
+      });
       setError(null);
     } catch (err) {
+      if (!isMounted()) return;
       setError((err as Error).message);
     } finally {
-      setLoading(false);
+      if (isMounted()) setLoading(false);
     }
-  }, []);
+  }, [isMounted]);
 
   useEffect(() => { void load(); }, [load]);
 
-  const openCreate = () => { setEditing(null); setForm(emptyForm); };
+  const openCreate = () => {
+    setSelected(null);
+    setForm(emptyForm);
+    setContributeAmount('');
+    setRingKey(prev => prev + 1);
+  };
+
   const openEdit = (goal: Goal) => {
-    setEditing(goal);
+    setSelected(goal);
     setForm({
       name: goal.name,
       targetAmount: goal.targetAmount.toString(),
       targetDate: goal.targetDate ? goal.targetDate.slice(0, 10) : '',
-      color: goal.color || '#22d3ee',
+      color: goal.color ?? '#00ff88',
     });
+    setContributeAmount('');
+    setRingKey(prev => prev + 1);
   };
-  const closeModal = () => { setForm(null); setEditing(null); setError(null); };
+
+  const closePanel = () => {
+    setForm(null);
+    setSelected(null);
+    setContributeAmount('');
+    setError(null);
+  };
 
   const handleSubmit = async () => {
     if (!form || !form.name.trim()) return;
     const target = parseFloat(form.targetAmount.replace(',', '.'));
-    if (isNaN(target) || target <= 0) { setError('Enter a valid target amount'); return; }
+    if (isNaN(target) || target <= 0) {
+      setError('Enter a valid target amount');
+      return;
+    }
     setError(null);
     setSaving(true);
     try {
@@ -66,210 +110,370 @@ export function GoalsPage() {
         targetDate: form.targetDate || null,
         color: form.color || null,
       };
-      if (editing) {
-        await api.updateGoal(editing.id, payload);
+      if (selected) {
+        await api.updateGoal(selected.id, payload);
       } else {
         await api.createGoal(payload);
       }
-      closeModal();
+      closePanel();
+      onDataChanged();
       void load();
     } catch (err) {
+      if (!isMounted()) return;
       setError((err as Error).message);
     } finally {
-      setSaving(false);
+      if (isMounted()) setSaving(false);
     }
   };
 
-  const handleDelete = async (goal: Goal) => {
-    if (!window.confirm(`Delete goal "${goal.name}"?`)) return;
+  const handleDelete = async () => {
+    if (!selected) return;
+    if (!window.confirm(`Delete goal "${selected.name}"?`)) return;
     setError(null);
     setSaving(true);
     try {
-      await api.deleteGoal(goal.id);
+      await api.deleteGoal(selected.id);
+      closePanel();
+      onDataChanged();
       void load();
     } catch (err) {
+      if (!isMounted()) return;
       setError((err as Error).message);
     } finally {
-      setSaving(false);
+      if (isMounted()) setSaving(false);
     }
   };
-
-  const closeContributeModal = () => { setContributeGoal(null); setContributeAmount(''); setError(null); };
 
   const handleContribute = async () => {
-    if (!contributeGoal) return;
+    if (!selected) return;
     const amount = parseFloat(contributeAmount.replace(',', '.'));
-    if (isNaN(amount) || amount <= 0) { setError('Enter a valid amount'); return; }
+    if (isNaN(amount) || amount <= 0) {
+      setError('Enter a valid contribution amount');
+      return;
+    }
     setError(null);
-    setSaving(true);
+    setContributing(true);
     try {
-      await api.contributeToGoal(contributeGoal.id, amount);
-      closeContributeModal();
+      await api.contributeToGoal(selected.id, amount);
+      setContributeAmount('');
+      showToast(`+${formatCurrency(amount)} contributed`, 'success');
+      setRingKey(prev => prev + 1);
+      onDataChanged();
       void load();
     } catch (err) {
+      if (!isMounted()) return;
       setError((err as Error).message);
     } finally {
-      setSaving(false);
+      if (isMounted()) setContributing(false);
     }
   };
 
   return (
-    <Page
-      title="Goals"
-      subtitle="Track progress toward savings targets"
-      actions={<Button onClick={openCreate} disabled={loading || saving}>+ Add goal</Button>}
-    >
-      {error && <Card><span style={{ color: tokens.colors.danger }}>Error: {error}</span></Card>}
+    <div className="flex flex-col gap-5">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-lg font-semibold text-neon-text">Goals</h1>
+          <p className="text-[11px] text-neon-text-muted mt-0.5">Track progress toward savings targets</p>
+        </div>
+        <button
+          onClick={openCreate}
+          disabled={loading || saving}
+          className="flex h-8 w-8 items-center justify-center rounded-lg
+                     bg-neon-green/10 border border-neon-green/20
+                     text-neon-green text-lg font-bold
+                     hover:bg-neon-green/20 transition-colors
+                     disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          +
+        </button>
+      </div>
 
-      <Card>
-        {loading && <span style={{ color: tokens.colors.textMuted }}>Loading goals…</span>}
-        {!loading && goals.length === 0 && <span style={{ color: tokens.colors.textMuted }}>No goals yet.</span>}
+      {/* Error banner */}
+      {error && !form && (
+        <div className="rounded-lg border border-neon-red/20 bg-neon-red/5 px-4 py-2.5 text-xs text-neon-red">
+          {error}
+        </div>
+      )}
 
-        {goals.length > 0 && (
-          <div style={{ overflowX: 'auto', marginTop: '0.5rem' }}>
-            <table style={{ minWidth: '780px' }}>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Progress</th>
-                  <th>Current</th>
-                  <th>Target</th>
-                  <th>Target date</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {goals.map((goal) => {
-                  const pct = goal.targetAmount > 0 ? Math.min(100, (goal.currentAmount / goal.targetAmount) * 100) : 0;
-                  return (
-                    <tr key={goal.id}>
-                      <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span
-                            style={{
-                              display: 'inline-block',
-                              width: 10,
-                              height: 10,
-                              borderRadius: '50%',
-                              background: goal.color || tokens.colors.accent,
-                            }}
-                          />
-                          {goal.name}
-                        </div>
-                      </td>
-                      <td style={{ minWidth: 140 }}>
-                        <div style={{
-                          background: 'rgba(255,255,255,0.06)',
-                          borderRadius: tokens.radii.sm,
-                          height: 8,
-                          overflow: 'hidden',
-                        }}>
-                          <div style={{
-                            width: `${pct}%`,
-                            height: '100%',
-                            background: pct >= 100 ? tokens.colors.success : (goal.color || tokens.colors.accent),
-                            borderRadius: tokens.radii.sm,
-                            transition: 'width 0.3s ease',
-                          }} />
-                        </div>
-                        <span style={{ fontSize: '0.75rem', color: tokens.colors.textMuted }}>{pct.toFixed(0)}%</span>
-                      </td>
-                      <td>{goal.currentAmount.toFixed(2)}</td>
-                      <td>{goal.targetAmount.toFixed(2)}</td>
-                      <td>{goal.targetDate ? goal.targetDate.slice(0, 10) : '—'}</td>
-                      <td>
-                        <div style={{ display: 'flex', gap: '0.45rem' }}>
-                          <Button variant="ghost" onClick={() => { closeModal(); setContributeGoal(goal); setContributeAmount(''); }} style={{ padding: '0.35rem 0.6rem' }}>
-                            Contribute
-                          </Button>
-                          <Button variant="ghost" onClick={() => openEdit(goal)} style={{ padding: '0.35rem 0.6rem' }}>Edit</Button>
-                          <Button variant="danger" onClick={() => handleDelete(goal)} style={{ padding: '0.35rem 0.6rem' }}>Delete</Button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Card>
+      {/* Loading */}
+      {loading && (
+        <p className="text-xs text-neon-text-muted py-8 text-center">Loading goals...</p>
+      )}
 
-      {/* Create / Edit modal */}
-      <Modal
-        title={editing ? 'Edit goal' : 'Add goal'}
-        open={form !== null}
-        onClose={closeModal}
-        footer={
-          <>
-            <Button variant="ghost" onClick={closeModal} disabled={saving}>Cancel</Button>
-            <Button onClick={handleSubmit} disabled={saving || !form?.name.trim()}>{saving ? 'Saving…' : 'Save'}</Button>
-          </>
-        }
-      >
+      {/* Empty state */}
+      {!loading && goals.length === 0 && (
+        <EmptyState message="No goals yet" actionLabel="Create your first goal" onAction={openCreate} />
+      )}
+
+      {/* Goal list - horizontal strips */}
+      {!loading && goals.length > 0 && (
+        <div className="flex flex-col">
+          {goals.map((goal, i) => {
+            const accent = goal.color ?? ACCENT_HEX[i % ACCENT_HEX.length];
+            const progress = goal.targetAmount > 0
+              ? Math.min(goal.currentAmount / goal.targetAmount, 1)
+              : 0;
+            const pctLabel = `${Math.round(progress * 100)}%`;
+            const isActive = selected?.id === goal.id;
+
+            return (
+              <button
+                key={goal.id}
+                onClick={() => openEdit(goal)}
+                className={`group flex items-center gap-4 px-4 py-3.5
+                           border-l-2 text-left transition-all
+                           ${isActive
+                             ? 'bg-[rgba(255,255,255,0.04)]'
+                             : 'border-l-transparent hover:bg-[rgba(255,255,255,0.02)]'
+                           }`}
+                style={{ borderLeftColor: isActive ? accent : undefined }}
+              >
+                {/* OrbitalRing */}
+                <div className="shrink-0">
+                  <OrbitalRing
+                    value={progress}
+                    size={44}
+                    color={accent}
+                    strokeWidth={3}
+                    label={pctLabel}
+                  />
+                </div>
+
+                {/* Name + amounts */}
+                <div className="flex flex-col min-w-0 flex-1">
+                  <span className="text-sm font-medium text-neon-text truncate">{goal.name}</span>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-[11px] font-semibold" style={{ color: accent }}>
+                      {formatCurrency(goal.currentAmount)}
+                    </span>
+                    <span className="text-[10px] text-neon-text-muted">/</span>
+                    <span className="text-[11px] text-neon-text-secondary">
+                      {formatCurrency(goal.targetAmount)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Target date */}
+                {goal.targetDate && (
+                  <span className="text-[10px] text-neon-text-muted shrink-0">
+                    {goal.targetDate.slice(0, 10)}
+                  </span>
+                )}
+
+                {/* Hover indicator */}
+                <span className="text-[10px] text-neon-text-muted opacity-0 group-hover:opacity-60 transition-opacity shrink-0">
+                  edit
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Side Panel */}
+      <SidePanel open={form !== null} onClose={closePanel}>
         {form && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            <FormField label="Name">
-              <input value={form.name} onChange={(e) => setForm(prev => prev ? { ...prev, name: e.target.value } : prev)} />
-            </FormField>
-            <FormField label="Target amount">
-              <input
-                type="text"
-                value={form.targetAmount}
-                onChange={(e) => setForm(prev => prev ? { ...prev, targetAmount: e.target.value } : prev)}
-                autoComplete="off"
-              />
-            </FormField>
-            <FormField label="Target date (optional)">
-              <input
-                type="date"
-                value={form.targetDate}
-                onChange={(e) => setForm(prev => prev ? { ...prev, targetDate: e.target.value } : prev)}
-              />
-            </FormField>
-            <FormField label="Color">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div className="flex flex-col gap-5">
+            {/* Panel title */}
+            <h2 className="text-sm font-semibold text-neon-text">
+              {selected ? 'Edit goal' : 'New goal'}
+            </h2>
+
+            {/* Error inside panel */}
+            {error && (
+              <div className="rounded-lg border border-neon-red/20 bg-neon-red/5 px-3 py-2 text-xs text-neon-red">
+                {error}
+              </div>
+            )}
+
+            {/* Large OrbitalRing (only for existing goals) */}
+            {selected && (() => {
+              const accent = selected.color ?? '#00ff88';
+              const progress = selected.targetAmount > 0
+                ? Math.min(selected.currentAmount / selected.targetAmount, 1)
+                : 0;
+              const pctLabel = `${Math.round(progress * 100)}%`;
+              const remaining = Math.max(selected.targetAmount - selected.currentAmount, 0);
+
+              return (
+                <div className="flex flex-col items-center gap-3">
+                  <OrbitalRing
+                    key={ringKey}
+                    value={progress}
+                    size={80}
+                    color={accent}
+                    strokeWidth={4}
+                    label={pctLabel}
+                  />
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-base font-semibold" style={{ color: accent }}>
+                      {formatCurrency(selected.currentAmount)}
+                    </span>
+                    <span className="text-xs text-neon-text-muted">of</span>
+                    <span className="text-sm text-neon-text-secondary">
+                      {formatCurrency(selected.targetAmount)}
+                    </span>
+                  </div>
+
+                  {/* Projection */}
+                  {selected.targetDate && (() => {
+                    const days = daysUntil(selected.targetDate.slice(0, 10));
+                    return (
+                      <p className="text-[10px] text-neon-text-muted text-center">
+                        {formatCurrency(remaining)} remaining
+                        {days > 0 ? ` \u00B7 ${days} day${days !== 1 ? 's' : ''} left` : ''}
+                        {days <= 0 ? ' \u00B7 past due' : ''}
+                      </p>
+                    );
+                  })()}
+                </div>
+              );
+            })()}
+
+            {/* Contribute section (only for existing goals) */}
+            {selected && (
+              <div className="flex flex-col gap-1.5 rounded-lg border border-neon-border bg-neon-elevated/50 p-3">
+                <label className="text-[9px] uppercase tracking-[2px] text-neon-text-muted">Contribute</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={contributeAmount}
+                    onChange={(e) => setContributeAmount(e.target.value)}
+                    placeholder="0.00"
+                    autoComplete="off"
+                    className="flex-1 rounded-md border border-neon-border bg-neon-bg px-3 py-1.5
+                               text-sm text-neon-text placeholder:text-neon-text-muted/40
+                               focus:border-neon-border-active focus:outline-none transition-colors"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') void handleContribute();
+                    }}
+                  />
+                  <button
+                    onClick={() => void handleContribute()}
+                    disabled={contributing || !contributeAmount.trim()}
+                    className="rounded-md bg-neon-green/10 border border-neon-green/20
+                               px-3 py-1.5 text-xs font-medium text-neon-green
+                               hover:bg-neon-green/20 transition-colors
+                               disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {contributing ? '...' : 'Add'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Separator */}
+            {selected && (
+              <div className="border-t border-neon-border" />
+            )}
+
+            {/* Edit fields */}
+            <div className="flex flex-col gap-4">
+              {/* Name */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[9px] uppercase tracking-[2px] text-neon-text-muted">Name</label>
                 <input
-                  type="color"
-                  value={form.color}
-                  onChange={(e) => setForm(prev => prev ? { ...prev, color: e.target.value } : prev)}
-                  style={{ width: 40, height: 34, padding: 0, border: 'none', cursor: 'pointer' }}
-                />
-                <input
-                  value={form.color}
-                  onChange={(e) => setForm(prev => prev ? { ...prev, color: e.target.value } : prev)}
-                  placeholder="#22d3ee"
-                  style={{ flex: 1 }}
+                  value={form.name}
+                  onChange={(e) => setForm(prev => prev ? { ...prev, name: e.target.value } : prev)}
+                  placeholder="e.g. Emergency fund"
+                  className="w-full rounded-md border border-neon-border bg-neon-elevated px-3 py-2
+                             text-sm text-neon-text placeholder:text-neon-text-muted/40
+                             focus:border-neon-border-active focus:outline-none transition-colors"
                 />
               </div>
-            </FormField>
+
+              {/* Target amount */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[9px] uppercase tracking-[2px] text-neon-text-muted">Target Amount</label>
+                <input
+                  type="text"
+                  value={form.targetAmount}
+                  onChange={(e) => setForm(prev => prev ? { ...prev, targetAmount: e.target.value } : prev)}
+                  placeholder="10000"
+                  autoComplete="off"
+                  className="w-full rounded-md border border-neon-border bg-neon-elevated px-3 py-2
+                             text-sm text-neon-text placeholder:text-neon-text-muted/40
+                             focus:border-neon-border-active focus:outline-none transition-colors"
+                />
+              </div>
+
+              {/* Target date */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[9px] uppercase tracking-[2px] text-neon-text-muted">Target Date</label>
+                <input
+                  type="date"
+                  value={form.targetDate}
+                  onChange={(e) => setForm(prev => prev ? { ...prev, targetDate: e.target.value } : prev)}
+                  className="w-full rounded-md border border-neon-border bg-neon-elevated px-3 py-2
+                             text-sm text-neon-text
+                             focus:border-neon-border-active focus:outline-none transition-colors"
+                />
+              </div>
+
+              {/* Color picker */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[9px] uppercase tracking-[2px] text-neon-text-muted">Color</label>
+                <div className="flex items-center gap-2.5">
+                  <input
+                    type="color"
+                    value={form.color || '#00ff88'}
+                    onChange={(e) => setForm(prev => prev ? { ...prev, color: e.target.value } : prev)}
+                    className="h-9 w-9 cursor-pointer rounded border-0 bg-transparent p-0"
+                  />
+                  <input
+                    value={form.color}
+                    onChange={(e) => setForm(prev => prev ? { ...prev, color: e.target.value } : prev)}
+                    placeholder="#00ff88"
+                    className="flex-1 rounded-md border border-neon-border bg-neon-elevated px-3 py-2
+                               text-sm text-neon-text font-mono placeholder:text-neon-text-muted/40
+                               focus:border-neon-border-active focus:outline-none transition-colors"
+                  />
+                </div>
+                {/* Preset swatches */}
+                <div className="flex gap-1.5 mt-1">
+                  {ACCENT_HEX.map((hex) => (
+                    <button
+                      key={hex}
+                      onClick={() => setForm(prev => prev ? { ...prev, color: hex } : prev)}
+                      className={`h-5 w-5 rounded-full transition-transform hover:scale-125
+                                 ${form.color === hex ? 'ring-2 ring-white/30 scale-110' : 'ring-1 ring-white/10'}`}
+                      style={{ background: hex }}
+                      title={hex}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-col gap-2 mt-2">
+              <button
+                onClick={() => void handleSubmit()}
+                disabled={saving || !form.name.trim()}
+                className="w-full rounded-md bg-neon-green/10 border border-neon-green/20
+                           px-4 py-2 text-xs font-medium text-neon-green
+                           hover:bg-neon-green/20 transition-colors
+                           disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {saving ? 'Saving...' : 'Save'}
+              </button>
+              {selected && (
+                <button
+                  onClick={() => void handleDelete()}
+                  disabled={saving}
+                  className="w-full rounded-md bg-neon-red/5 border border-neon-red/15
+                             px-4 py-2 text-xs font-medium text-neon-red
+                             hover:bg-neon-red/10 transition-colors
+                             disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Delete
+                </button>
+              )}
+            </div>
           </div>
         )}
-      </Modal>
-
-      {/* Contribute modal */}
-      <Modal
-        title={`Contribute to "${contributeGoal?.name}"`}
-        open={contributeGoal !== null}
-        onClose={closeContributeModal}
-        zIndex={60}
-        footer={
-          <>
-            <Button variant="ghost" onClick={closeContributeModal} disabled={saving}>Cancel</Button>
-            <Button onClick={handleContribute} disabled={saving}>{saving ? 'Saving…' : 'Add funds'}</Button>
-          </>
-        }
-      >
-        <FormField label="Amount">
-          <input
-            type="text"
-            value={contributeAmount}
-            onChange={(e) => setContributeAmount(e.target.value)}
-            autoComplete="off"
-            placeholder="0.00"
-          />
-        </FormField>
-      </Modal>
-    </Page>
+      </SidePanel>
+    </div>
   );
 }

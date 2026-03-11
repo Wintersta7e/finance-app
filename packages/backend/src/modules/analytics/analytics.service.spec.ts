@@ -115,11 +115,17 @@ describe('AnalyticsService', () => {
         { id: 1, initialBalance: new Decimal(1000), deletedAt: null },
       ]);
 
-      // Mock aggregate to return cumulative sums up to each date
-      mockPrisma.transaction.aggregate
-        .mockResolvedValueOnce({ _sum: { amount: new Decimal(500) } })  // day 1
-        .mockResolvedValueOnce({ _sum: { amount: new Decimal(700) } })  // day 2
-        .mockResolvedValueOnce({ _sum: { amount: new Decimal(600) } }); // day 3
+      // Prior balance aggregate (sum of transactions before the first sample date)
+      mockPrisma.transaction.aggregate.mockResolvedValueOnce({
+        _sum: { amount: new Decimal(500) },
+      });
+
+      // Transactions in the sample range, ordered by date
+      mockPrisma.transaction.findMany.mockResolvedValue([
+        { date: new Date('2024-03-01T12:00:00Z'), amount: new Decimal(0) },   // no change on day 1
+        { date: new Date('2024-03-02T10:00:00Z'), amount: new Decimal(200) },  // +200 on day 2
+        { date: new Date('2024-03-03T08:00:00Z'), amount: new Decimal(-100) }, // -100 on day 3
+      ]);
 
       const from = new Date('2024-03-01');
       const to = new Date('2024-03-03');
@@ -127,8 +133,11 @@ describe('AnalyticsService', () => {
       const result = await service.getNetWorthTrend(from, to);
 
       expect(result).toHaveLength(3);
+      // Day 1: 1000 (initial) + 500 (prior) + 0 = 1500
       expect(result[0]).toEqual({ date: '2024-03-01', balance: 1500 });
+      // Day 2: 1500 + 200 = 1700
       expect(result[1]).toEqual({ date: '2024-03-02', balance: 1700 });
+      // Day 3: 1700 - 100 = 1600
       expect(result[2]).toEqual({ date: '2024-03-03', balance: 1600 });
     });
 
@@ -137,6 +146,7 @@ describe('AnalyticsService', () => {
         { id: 1, initialBalance: new Decimal(1000), deletedAt: null },
       ]);
       mockPrisma.transaction.aggregate.mockResolvedValue({ _sum: { amount: null } });
+      mockPrisma.transaction.findMany.mockResolvedValue([]);
 
       const from = new Date('2020-01-01');
       const to = new Date('2024-12-31'); // ~5 years = 1800+ days
@@ -236,7 +246,7 @@ describe('AnalyticsService', () => {
   });
 
   describe('calculateBalanceUpTo', () => {
-    it('should sum initial balances and transactions up to date', async () => {
+    it('should sum initial balances and non-transfer transactions up to date', async () => {
       mockPrisma.account.findMany.mockResolvedValue([
         { id: 1, initialBalance: new Decimal(1000), deletedAt: null },
         { id: 2, initialBalance: new Decimal(500), deletedAt: null },
@@ -245,9 +255,18 @@ describe('AnalyticsService', () => {
         _sum: { amount: new Decimal(200) },
       });
 
-      const result = await service.calculateBalanceUpTo(new Date('2024-03-15'));
+      const testDate = new Date('2024-03-15');
+      const result = await service.calculateBalanceUpTo(testDate);
 
       expect(result).toBe(1700); // 1000 + 500 + 200
+      expect(mockPrisma.transaction.aggregate).toHaveBeenCalledWith({
+        where: {
+          deletedAt: null,
+          type: { not: 'TRANSFER' },
+          date: { lte: testDate },
+        },
+        _sum: { amount: true },
+      });
     });
 
     it('should exclude soft-deleted accounts', async () => {

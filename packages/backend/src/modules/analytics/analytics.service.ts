@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Decimal } from '@prisma/client/runtime/library';
 import {
@@ -109,26 +109,84 @@ export class AnalyticsService {
   }
 
   async getNetWorthTrend(from: Date, to: Date): Promise<NetWorthPointDto[]> {
+    if (to < from) {
+      throw new BadRequestException('to must be on or after from');
+    }
+
     // Limit date range to prevent excessive queries
     const daysDiff = Math.ceil((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24)) + 1;
     const effectiveDays = Math.min(daysDiff, AnalyticsService.MAX_NET_WORTH_DAYS);
 
     // If range exceeds max, sample dates evenly
-    const points: NetWorthPointDto[] = [];
     const step = daysDiff > AnalyticsService.MAX_NET_WORTH_DAYS
       ? daysDiff / AnalyticsService.MAX_NET_WORTH_DAYS
       : 1;
 
+    // Build the list of sample dates
+    const sampleDates: Date[] = [];
     for (let i = 0; i < effectiveDays; i++) {
       const dayOffset = Math.floor(i * step);
       const date = new Date(from);
-      date.setDate(date.getDate() + dayOffset);
-      date.setHours(23, 59, 59, 999);
+      date.setUTCDate(date.getUTCDate() + dayOffset);
+      date.setUTCHours(23, 59, 59, 999);
+      sampleDates.push(date);
+    }
 
-      const balance = await this.calculateBalanceUpTo(date);
+    if (sampleDates.length === 0) {
+      return [];
+    }
+
+    // 1. Fetch initial balance sum once (all non-deleted accounts)
+    const accounts = await this.prisma.account.findMany({
+      where: { deletedAt: null },
+    });
+    let initialTotal = 0;
+    for (const account of accounts) {
+      initialTotal += this.toNumber(account.initialBalance);
+    }
+
+    // 2. Fetch the cumulative transaction sum up to the day before the first sample date
+    const firstDate = sampleDates[0];
+    const dayBeforeFirst = new Date(firstDate);
+    dayBeforeFirst.setUTCDate(dayBeforeFirst.getUTCDate() - 1);
+    dayBeforeFirst.setUTCHours(23, 59, 59, 999);
+
+    const priorResult = await this.prisma.transaction.aggregate({
+      where: {
+        deletedAt: null,
+        type: { not: 'TRANSFER' },
+        date: { lte: dayBeforeFirst },
+      },
+      _sum: { amount: true },
+    });
+    let runningBalance = initialTotal + (priorResult._sum.amount ? this.toNumber(priorResult._sum.amount) : 0);
+
+    // 3. Single query: all transactions in the full sample range, ordered by date
+    const lastDate = sampleDates[sampleDates.length - 1];
+    const rangeTransactions = await this.prisma.transaction.findMany({
+      where: {
+        deletedAt: null,
+        type: { not: 'TRANSFER' },
+        date: { gt: dayBeforeFirst, lte: lastDate },
+      },
+      select: { date: true, amount: true },
+      orderBy: { date: 'asc' },
+    });
+
+    // 4. Walk sample dates and transactions together, accumulating balance
+    const points: NetWorthPointDto[] = [];
+    let txIdx = 0;
+
+    for (const sampleDate of sampleDates) {
+      // Add all transactions up to and including this sample date
+      while (txIdx < rangeTransactions.length && rangeTransactions[txIdx].date <= sampleDate) {
+        runningBalance += this.toNumber(rangeTransactions[txIdx].amount);
+        txIdx++;
+      }
+
       points.push({
-        date: this.formatDate(date),
-        balance,
+        date: this.formatDate(sampleDate),
+        balance: runningBalance,
       });
     }
 
@@ -248,10 +306,11 @@ export class AnalyticsService {
       initialTotal += this.toNumber(account.initialBalance);
     }
 
-    // Get sum of all transactions up to date
+    // Get sum of all non-transfer transactions up to date
     const result = await this.prisma.transaction.aggregate({
       where: {
         deletedAt: null,
+        type: { not: 'TRANSFER' },
         date: {
           lte: date,
         },

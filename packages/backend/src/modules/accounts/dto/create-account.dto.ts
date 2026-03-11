@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsBoolean, IsOptional } from 'class-validator';
+import { IsString, IsNumber, IsBoolean, IsOptional, IsIn } from 'class-validator';
 
 export class CreateAccountDto {
   @IsString()
@@ -6,10 +6,11 @@ export class CreateAccountDto {
 
   @IsOptional()
   @IsString()
+  @IsIn(['CHECKING', 'SAVINGS', 'CREDIT', 'INVESTMENT', 'CASH'])
   type?: string = 'CHECKING';
 
   @IsOptional()
-  @IsNumber()
+  @IsNumber({ allowInfinity: false, allowNaN: false })
   initialBalance?: number = 0;
 
   @IsOptional()

@@ -15,7 +15,7 @@ export const RECURRING_PERIODS = ['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'] as con
 export type RecurringPeriod = (typeof RECURRING_PERIODS)[number];
 
 export class CreateRecurringRuleDto {
-  @IsNumber()
+  @IsNumber({ allowInfinity: false, allowNaN: false })
   amount!: number;
 
   @IsString()

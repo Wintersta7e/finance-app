@@ -19,7 +19,7 @@ export class AuditController {
   getRecentActivity(
     @Query('limit', new DefaultValuePipe(50), ParseIntPipe) limit: number,
   ) {
-    const capped = Math.min(limit, 100);
+    const capped = Math.max(1, Math.min(limit, 100));
     return this.service.getRecentActivity(capped);
   }
 

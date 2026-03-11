@@ -17,48 +17,25 @@ import type {
   ImportResult,
 } from './types';
 
-async function request<T>(path: string, options: RequestInit = {}, retries = 5): Promise<T> {
-  let lastError: Error | null = null;
-
-  for (let attempt = 0; attempt <= retries; attempt++) {
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  for (let attempt = 0; attempt <= 1; attempt++) {
     try {
       const res = await fetch(`${API_BASE_URL}${path}`, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(options.headers || {}),
-        },
+        headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
         ...options,
       });
-
       const text = await res.text().catch(() => '');
-
-      if (!res.ok) {
-        throw new Error(`API ${res.status} ${res.statusText}: ${text}`);
-      }
-
-      // Many endpoints return 204/empty bodies; avoid JSON parsing failures.
-      if (!text) {
-        return undefined as T;
-      }
-
+      if (!res.ok) throw new Error(`API ${res.status} ${res.statusText}: ${text}`);
+      if (!text) return undefined as T;
       return JSON.parse(text) as T;
     } catch (err) {
-      lastError = err as Error;
-      const isConnectionError =
-        lastError.message === 'Failed to fetch' ||
-        lastError.message.includes('ECONNREFUSED') ||
-        lastError.message.includes('NetworkError');
-
-      if (!isConnectionError || attempt === retries) {
-        throw lastError;
-      }
-
-      // Wait before retrying: 1s, 2s, 4s, 8s, 16s
-      await new Promise((r) => setTimeout(r, 1000 * Math.pow(2, attempt)));
+      const e = err as Error;
+      const isNetwork = e.message === 'Failed to fetch' || e.message.includes('NetworkError');
+      if (!isNetwork || attempt === 1) throw e;
+      await new Promise((r) => setTimeout(r, 1000));
     }
   }
-
-  throw lastError;
+  throw new Error('Request failed');
 }
 
 export const api = {
@@ -71,6 +48,14 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(payload),
     });
+  },
+
+  updateAccount(id: number, payload: Partial<Omit<Account, 'id'>>) {
+    return request<Account>(`/accounts/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+  },
+
+  deleteAccount(id: number) {
+    return request<void>(`/accounts/${id}`, { method: 'DELETE' });
   },
 
   getCategories(): Promise<Category[]> {
@@ -97,10 +82,9 @@ export const api = {
     });
   },
 
-  async getTransactions(from: string, to: string): Promise<Transaction[]> {
-    const params = new URLSearchParams({ startDate: from, endDate: to, limit: '100' });
-    const result = await request<{ data: Transaction[] }>(`/transactions?${params.toString()}`);
-    return result.data;
+  async getTransactions(from: string, to: string, limit = 100, page = 1): Promise<{ data: Transaction[]; total: number }> {
+    const params = new URLSearchParams({ startDate: from, endDate: to, limit: String(limit), page: String(page) });
+    return request<{ data: Transaction[]; total: number }>(`/transactions?${params.toString()}`);
   },
 
   createTransaction(payload: Omit<Transaction, 'id'>): Promise<Transaction> {
@@ -110,8 +94,16 @@ export const api = {
     });
   },
 
+  updateTransaction(id: number, payload: Partial<Omit<Transaction, 'id'>>) {
+    return request<Transaction>(`/transactions/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+  },
+
   getSettings(): Promise<AppSettings> {
     return request<AppSettings>('/settings');
+  },
+
+  updateSettings(payload: Partial<Omit<AppSettings, 'id'>>) {
+    return request<AppSettings>('/settings', { method: 'PUT', body: JSON.stringify(payload) });
   },
 
   getMonthSummary(year: number, month: number): Promise<MonthSummary> {
@@ -282,5 +274,14 @@ export const api = {
   },
   getEntityHistory(entityType: string, entityId: number) {
     return request<AuditEntry[]>(`/audit/${encodeURIComponent(entityType)}/${entityId}`);
+  },
+
+  async checkHealth(): Promise<boolean> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/health`);
+      return res.ok;
+    } catch {
+      return false;
+    }
   },
 };

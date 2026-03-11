@@ -43,7 +43,7 @@ export class GoalsService {
       ],
     });
 
-    return goals.map((goal) => this.withProgress(goal));
+    return goals.map((goal: SavingsGoal) => this.withProgress(goal));
   }
 
   async findOne(id: number): Promise<GoalWithProgress> {

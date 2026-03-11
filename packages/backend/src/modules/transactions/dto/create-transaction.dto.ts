@@ -15,7 +15,7 @@ export class CreateTransactionDto {
   @IsDate()
   date!: Date;
 
-  @IsNumber()
+  @IsNumber({ allowInfinity: false, allowNaN: false })
   amount!: number;
 
   @IsString()

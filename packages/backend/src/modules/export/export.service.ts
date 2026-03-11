@@ -113,13 +113,19 @@ export class ExportService {
         t.category?.name || '',
         t.payee?.name || '',
         t.notes || '',
-      ].map(this.escapeCsvField).join(',');
+      ].map((f) => this.escapeCsvField(f)).join(',');
     });
 
     return [headers.join(','), ...rows].join('\n');
   }
 
   private escapeCsvField(field: string): string {
+    // Prevent CSV formula injection: prefix dangerous leading characters with a single quote.
+    // Skip numeric values (e.g. -50, +100) which are safe.
+    const formulaChars = ['=', '+', '-', '@', '\t'];
+    if (field.length > 0 && formulaChars.includes(field[0]) && isNaN(Number(field))) {
+      field = "'" + field;
+    }
     if (field.includes(',') || field.includes('"') || field.includes('\n')) {
       return `"${field.replace(/"/g, '""')}"`;
     }
@@ -220,15 +226,15 @@ export class ExportService {
 
       // Import transactions with mapped IDs
       for (const transaction of data.data.transactions || []) {
-        const accountId = accountIdMap.get(transaction.accountId) || transaction.accountId;
+        const accountId = this.resolveId(accountIdMap, transaction.accountId, 'account', mode);
         const categoryId = transaction.categoryId
-          ? (categoryIdMap.get(transaction.categoryId) || transaction.categoryId)
+          ? this.resolveId(categoryIdMap, transaction.categoryId, 'category', mode)
           : null;
         const payeeId = transaction.payeeId
-          ? (payeeIdMap.get(transaction.payeeId) || transaction.payeeId)
+          ? this.resolveId(payeeIdMap, transaction.payeeId, 'payee', mode)
           : null;
 
-        await tx.transaction.create({
+        const createdTx = await tx.transaction.create({
           data: {
             date: new Date(transaction.date),
             amount: transaction.amount,
@@ -239,17 +245,35 @@ export class ExportService {
             payeeId,
           },
         });
+
+        // Restore tag associations from exported data
+        if (Array.isArray(transaction.tags)) {
+          for (const tt of transaction.tags) {
+            const mappedTagId = mode === 'replace'
+              ? tagIdMap.get(tt.tagId)
+              : (tagIdMap.get(tt.tagId) ?? tt.tagId);
+            if (mappedTagId !== undefined) {
+              await tx.transactionTag.create({
+                data: {
+                  transactionId: createdTx.id,
+                  tagId: mappedTagId,
+                },
+              });
+            }
+          }
+        }
+
         summary.imported.transactions++;
       }
 
       // Import recurring rules with mapped IDs
       for (const rule of data.data.recurringRules || []) {
-        const accountId = accountIdMap.get(rule.accountId) || rule.accountId;
+        const accountId = this.resolveId(accountIdMap, rule.accountId, 'account', mode);
         const categoryId = rule.categoryId
-          ? (categoryIdMap.get(rule.categoryId) || rule.categoryId)
+          ? this.resolveId(categoryIdMap, rule.categoryId, 'category', mode)
           : null;
         const payeeId = rule.payeeId
-          ? (payeeIdMap.get(rule.payeeId) || rule.payeeId)
+          ? this.resolveId(payeeIdMap, rule.payeeId, 'payee', mode)
           : null;
 
         await tx.recurringRule.create({
@@ -272,7 +296,7 @@ export class ExportService {
 
       // Import budgets with mapped IDs
       for (const budget of data.data.budgets || []) {
-        const categoryId = categoryIdMap.get(budget.categoryId) || budget.categoryId;
+        const categoryId = this.resolveId(categoryIdMap, budget.categoryId, 'category', mode);
 
         await tx.budget.create({
           data: {
@@ -322,6 +346,29 @@ export class ExportService {
     });
   }
 
+  /**
+   * Resolve an old ID to a new ID using the mapping.
+   * In 'replace' mode, throws if the ID is not found in the map.
+   * In 'merge' mode, falls back to the original ID.
+   */
+  private resolveId(
+    idMap: Map<number, number>,
+    oldId: number,
+    entityName: string,
+    mode: ImportMode,
+  ): number {
+    const mapped = idMap.get(oldId);
+    if (mapped !== undefined) {
+      return mapped;
+    }
+    if (mode === 'replace') {
+      throw new BadRequestException(
+        `Import failed: ${entityName} with original ID ${oldId} was not found in the import data`,
+      );
+    }
+    return oldId;
+  }
+
   private validateImportData(data: any): void {
     if (!data || typeof data !== 'object') {
       throw new BadRequestException('Invalid import data: expected an object');
@@ -339,6 +386,94 @@ export class ExportService {
 
     if (!data.data || typeof data.data !== 'object') {
       throw new BadRequestException('Invalid import data: missing data object');
+    }
+
+    // Validate transaction fields
+    if (Array.isArray(data.data.transactions)) {
+      for (let i = 0; i < data.data.transactions.length; i++) {
+        const t = data.data.transactions[i];
+        if (typeof t.amount !== 'number' || !Number.isFinite(t.amount)) {
+          throw new BadRequestException(
+            `Invalid transaction at index ${i}: amount must be a finite number`,
+          );
+        }
+        if (!t.date || isNaN(new Date(t.date).getTime())) {
+          throw new BadRequestException(
+            `Invalid transaction at index ${i}: date must be a valid date string`,
+          );
+        }
+        if (typeof t.accountId !== 'number' || !Number.isInteger(t.accountId)) {
+          throw new BadRequestException(
+            `Invalid transaction at index ${i}: accountId must be an integer`,
+          );
+        }
+      }
+    }
+
+    // Validate account fields
+    if (Array.isArray(data.data.accounts)) {
+      for (let i = 0; i < data.data.accounts.length; i++) {
+        const a = data.data.accounts[i];
+        if (typeof a.name !== 'string' || a.name.trim().length === 0) {
+          throw new BadRequestException(
+            `Invalid account at index ${i}: name must be a non-empty string`,
+          );
+        }
+        if (
+          a.initialBalance !== undefined &&
+          (typeof a.initialBalance !== 'number' || !Number.isFinite(a.initialBalance))
+        ) {
+          throw new BadRequestException(
+            `Invalid account at index ${i}: initialBalance must be a finite number`,
+          );
+        }
+      }
+    }
+
+    // Validate recurring rule fields
+    if (Array.isArray(data.data.recurringRules)) {
+      for (let i = 0; i < data.data.recurringRules.length; i++) {
+        const r = data.data.recurringRules[i];
+        if (typeof r.amount !== 'number' || !Number.isFinite(r.amount)) {
+          throw new BadRequestException(
+            `Invalid recurring rule at index ${i}: amount must be a finite number`,
+          );
+        }
+        if (!r.startDate || isNaN(new Date(r.startDate).getTime())) {
+          throw new BadRequestException(
+            `Invalid recurring rule at index ${i}: startDate must be a valid date string`,
+          );
+        }
+        if (typeof r.accountId !== 'number' || !Number.isInteger(r.accountId)) {
+          throw new BadRequestException(
+            `Invalid recurring rule at index ${i}: accountId must be an integer`,
+          );
+        }
+      }
+    }
+
+    // Validate budget fields
+    if (Array.isArray(data.data.budgets)) {
+      for (let i = 0; i < data.data.budgets.length; i++) {
+        const b = data.data.budgets[i];
+        if (typeof b.amount !== 'number' || !Number.isFinite(b.amount)) {
+          throw new BadRequestException(
+            `Invalid budget at index ${i}: amount must be a finite number`,
+          );
+        }
+      }
+    }
+
+    // Validate goal fields
+    if (Array.isArray(data.data.goals)) {
+      for (let i = 0; i < data.data.goals.length; i++) {
+        const g = data.data.goals[i];
+        if (typeof g.targetAmount !== 'number' || !Number.isFinite(g.targetAmount)) {
+          throw new BadRequestException(
+            `Invalid goal at index ${i}: targetAmount must be a finite number`,
+          );
+        }
+      }
     }
   }
 }

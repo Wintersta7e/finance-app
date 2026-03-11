@@ -74,88 +74,78 @@ describe('SettingsService', () => {
 
   describe('updateSettings', () => {
     it('should update currencyCode', async () => {
-      const existingSettings = {
+      const updatedSettings = {
         id: 1,
-        currencyCode: 'EUR',
+        currencyCode: 'USD',
         firstDayOfMonth: 1,
         firstDayOfWeek: 1,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      const updatedSettings = { ...existingSettings, currencyCode: 'USD' };
-      mockPrisma.appSettings.upsert.mockResolvedValue(existingSettings);
-      mockPrisma.appSettings.update.mockResolvedValue(updatedSettings);
+      mockPrisma.appSettings.upsert.mockResolvedValue(updatedSettings);
 
       const result = await service.updateSettings({ currencyCode: 'USD' });
 
-      expect(mockPrisma.appSettings.update).toHaveBeenCalledWith({
+      expect(mockPrisma.appSettings.upsert).toHaveBeenCalledWith({
         where: { id: 1 },
-        data: { currencyCode: 'USD' },
+        update: { currencyCode: 'USD' },
+        create: { id: 1, currencyCode: 'USD' },
       });
       expect(result).toEqual(updatedSettings);
     });
 
     it('should update firstDayOfMonth', async () => {
-      const existingSettings = {
+      const updatedSettings = {
         id: 1,
         currencyCode: 'EUR',
-        firstDayOfMonth: 1,
+        firstDayOfMonth: 15,
         firstDayOfWeek: 1,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      const updatedSettings = { ...existingSettings, firstDayOfMonth: 15 };
-      mockPrisma.appSettings.upsert.mockResolvedValue(existingSettings);
-      mockPrisma.appSettings.update.mockResolvedValue(updatedSettings);
+      mockPrisma.appSettings.upsert.mockResolvedValue(updatedSettings);
 
       const result = await service.updateSettings({ firstDayOfMonth: 15 });
 
-      expect(mockPrisma.appSettings.update).toHaveBeenCalledWith({
+      expect(mockPrisma.appSettings.upsert).toHaveBeenCalledWith({
         where: { id: 1 },
-        data: { firstDayOfMonth: 15 },
+        update: { firstDayOfMonth: 15 },
+        create: { id: 1, firstDayOfMonth: 15 },
       });
       expect(result).toEqual(updatedSettings);
     });
 
     it('should update firstDayOfWeek', async () => {
-      const existingSettings = {
+      const updatedSettings = {
         id: 1,
         currencyCode: 'EUR',
         firstDayOfMonth: 1,
-        firstDayOfWeek: 1,
+        firstDayOfWeek: 0,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      const updatedSettings = { ...existingSettings, firstDayOfWeek: 0 };
-      mockPrisma.appSettings.upsert.mockResolvedValue(existingSettings);
-      mockPrisma.appSettings.update.mockResolvedValue(updatedSettings);
+      mockPrisma.appSettings.upsert.mockResolvedValue(updatedSettings);
 
       const result = await service.updateSettings({ firstDayOfWeek: 0 });
 
-      expect(mockPrisma.appSettings.update).toHaveBeenCalledWith({
+      expect(mockPrisma.appSettings.upsert).toHaveBeenCalledWith({
         where: { id: 1 },
-        data: { firstDayOfWeek: 0 },
+        update: { firstDayOfWeek: 0 },
+        create: { id: 1, firstDayOfWeek: 0 },
       });
       expect(result).toEqual(updatedSettings);
     });
 
     it('should update multiple fields at once', async () => {
-      const existingSettings = {
-        id: 1,
-        currencyCode: 'EUR',
-        firstDayOfMonth: 1,
-        firstDayOfWeek: 1,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
       const updatedSettings = {
-        ...existingSettings,
+        id: 1,
         currencyCode: 'GBP',
         firstDayOfMonth: 25,
         firstDayOfWeek: 6,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
-      mockPrisma.appSettings.upsert.mockResolvedValue(existingSettings);
-      mockPrisma.appSettings.update.mockResolvedValue(updatedSettings);
+      mockPrisma.appSettings.upsert.mockResolvedValue(updatedSettings);
 
       const result = await service.updateSettings({
         currencyCode: 'GBP',
@@ -163,9 +153,15 @@ describe('SettingsService', () => {
         firstDayOfWeek: 6,
       });
 
-      expect(mockPrisma.appSettings.update).toHaveBeenCalledWith({
+      expect(mockPrisma.appSettings.upsert).toHaveBeenCalledWith({
         where: { id: 1 },
-        data: {
+        update: {
+          currencyCode: 'GBP',
+          firstDayOfMonth: 25,
+          firstDayOfWeek: 6,
+        },
+        create: {
+          id: 1,
           currencyCode: 'GBP',
           firstDayOfMonth: 25,
           firstDayOfWeek: 6,
@@ -175,29 +171,24 @@ describe('SettingsService', () => {
     });
 
     it('should create settings if not exists before updating', async () => {
-      const defaultSettings = {
+      const updatedSettings = {
         id: 1,
-        currencyCode: 'EUR',
+        currencyCode: 'USD',
         firstDayOfMonth: 1,
         firstDayOfWeek: 1,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      const updatedSettings = { ...defaultSettings, currencyCode: 'USD' };
-      mockPrisma.appSettings.upsert.mockResolvedValue(defaultSettings);
-      mockPrisma.appSettings.update.mockResolvedValue(updatedSettings);
+      mockPrisma.appSettings.upsert.mockResolvedValue(updatedSettings);
 
       const result = await service.updateSettings({ currencyCode: 'USD' });
 
       expect(mockPrisma.appSettings.upsert).toHaveBeenCalledWith({
         where: { id: 1 },
-        update: {},
-        create: { id: 1 },
+        update: { currencyCode: 'USD' },
+        create: { id: 1, currencyCode: 'USD' },
       });
-      expect(mockPrisma.appSettings.update).toHaveBeenCalledWith({
-        where: { id: 1 },
-        data: { currencyCode: 'USD' },
-      });
+      expect(mockPrisma.appSettings.update).not.toHaveBeenCalled();
       expect(result).toEqual(updatedSettings);
     });
   });

@@ -339,13 +339,15 @@ export function TransactionsPage({ onDataChanged }: TransactionsPageProps) {
       }
       closePanel();
       setPage(1);
+      loadingRef.current = false;
       loadTransactions(1);
       setRefDataToken((t) => t + 1);
       onDataChanged();
     } catch (err) {
+      if (!isMounted()) return;
       setPanelError((err as Error).message);
     } finally {
-      setSaving(false);
+      if (isMounted()) setSaving(false);
     }
   };
 
@@ -361,13 +363,15 @@ export function TransactionsPage({ onDataChanged }: TransactionsPageProps) {
       await api.deleteTransaction(selected.id);
       closePanel();
       setPage(1);
+      loadingRef.current = false;
       loadTransactions(1);
       setRefDataToken((t) => t + 1);
       onDataChanged();
     } catch (err) {
+      if (!isMounted()) return;
       setPanelError((err as Error).message);
     } finally {
-      setDeleting(false);
+      if (isMounted()) setDeleting(false);
     }
   };
 

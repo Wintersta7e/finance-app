@@ -119,9 +119,10 @@ export function GoalsPage({ onDataChanged, showToast }: GoalsPageProps) {
       onDataChanged();
       void load();
     } catch (err) {
+      if (!isMounted()) return;
       setError((err as Error).message);
     } finally {
-      setSaving(false);
+      if (isMounted()) setSaving(false);
     }
   };
 
@@ -136,9 +137,10 @@ export function GoalsPage({ onDataChanged, showToast }: GoalsPageProps) {
       onDataChanged();
       void load();
     } catch (err) {
+      if (!isMounted()) return;
       setError((err as Error).message);
     } finally {
-      setSaving(false);
+      if (isMounted()) setSaving(false);
     }
   };
 
@@ -159,9 +161,10 @@ export function GoalsPage({ onDataChanged, showToast }: GoalsPageProps) {
       onDataChanged();
       void load();
     } catch (err) {
+      if (!isMounted()) return;
       setError((err as Error).message);
     } finally {
-      setContributing(false);
+      if (isMounted()) setContributing(false);
     }
   };
 

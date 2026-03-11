@@ -215,10 +215,11 @@ export function DashboardPage({ analyticsRefreshToken, onDataChanged, onNavigate
 
     // Fetch categories + accounts for dropdowns
     void Promise.all([api.getCategories(), api.getAccounts()]).then(([cats, accts]) => {
+      if (!isMounted()) return;
       setCategories(cats);
       setAccounts(accts.filter((a) => !a.archived));
     });
-  }, []);
+  }, [isMounted]);
 
   const closePanel = useCallback(() => {
     setPanelOpen(false);
@@ -259,12 +260,13 @@ export function DashboardPage({ analyticsRefreshToken, onDataChanged, onNavigate
         if (successTimer.current) clearTimeout(successTimer.current);
         successTimer.current = setTimeout(() => setSuccessMsg(null), 2500);
       } catch (err) {
+        if (!isMounted()) return;
         setSaveError(err instanceof Error ? err.message : 'Failed to create transaction');
       } finally {
-        setSaving(false);
+        if (isMounted()) setSaving(false);
       }
     },
-    [form, onDataChanged, closePanel],
+    [form, onDataChanged, closePanel, isMounted],
   );
 
   /* ── derived values ──────────────────────────────────────────────── */

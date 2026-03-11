@@ -65,9 +65,10 @@ export function PayeesPage() {
       closePanel();
       void load();
     } catch (err) {
+      if (!isMounted()) return;
       setError((err as Error).message);
     } finally {
-      setSaving(false);
+      if (isMounted()) setSaving(false);
     }
   };
 
@@ -81,9 +82,10 @@ export function PayeesPage() {
       closePanel();
       void load();
     } catch (err) {
+      if (!isMounted()) return;
       setError((err as Error).message);
     } finally {
-      setSaving(false);
+      if (isMounted()) setSaving(false);
     }
   };
 

@@ -55,12 +55,13 @@ export function SettingsPage({ showToast }: SettingsPageProps) {
         firstDayOfMonth: form.firstDayOfMonth,
         firstDayOfWeek: form.firstDayOfWeek,
       });
+      if (!isMounted()) return;
       showToast('Settings saved', 'success');
-    } catch (err) {
-      setError((err as Error).message);
+    } catch {
+      if (!isMounted()) return;
       showToast('Failed to save settings', 'error');
     } finally {
-      setSaving(false);
+      if (isMounted()) setSaving(false);
     }
   };
 

@@ -12,9 +12,9 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
@@ -25,11 +25,14 @@ jobs:
         run: npx prisma generate
         working-directory: packages/backend
 
-      - name: Build
-        run: npm run build
+      - name: Build backend
+        run: npm run build:backend
+
+      - name: Build frontend
+        run: npm -w @finance/desktop run build
 
       - name: Build Windows portable and publish to GitHub Releases
-        run: npx electron-builder --win --publish always
+        run: npx electron-builder --win portable --publish always
         working-directory: packages/desktop
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -11,7 +11,7 @@ export const BUDGET_PERIODS = ['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'] as const;
 export type BudgetPeriod = (typeof BUDGET_PERIODS)[number];
 
 export class CreateBudgetDto {
-  @IsNumber()
+  @IsNumber({ allowInfinity: false, allowNaN: false })
   @IsPositive()
   amount!: number;
 

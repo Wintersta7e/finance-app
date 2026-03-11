@@ -20,9 +20,9 @@ export class TransactionsService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(query: TransactionQueryDto): Promise<PaginatedResult<any>> {
-    const page = query.page || 1;
+    const safePage = Math.max(1, query.page || 1);
     const limit = query.limit || 20;
-    const skip = (page - 1) * limit;
+    const skip = (safePage - 1) * limit;
 
     const where: any = { deletedAt: null };
 
@@ -60,7 +60,7 @@ export class TransactionsService {
       data,
       meta: {
         total,
-        page,
+        page: safePage,
         limit,
         totalPages: Math.ceil(total / limit),
       },

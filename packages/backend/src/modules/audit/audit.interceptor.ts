@@ -36,7 +36,7 @@ export class AuditInterceptor implements NestInterceptor {
     const method: string = request.method;
 
     // Only audit mutating operations
-    if (!['POST', 'PUT', 'DELETE'].includes(method)) {
+    if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
       return next.handle();
     }
 
@@ -46,7 +46,7 @@ export class AuditInterceptor implements NestInterceptor {
       ? parseInt(request.params.id, 10)
       : undefined;
     const action =
-      method === 'POST' ? 'CREATE' : method === 'PUT' ? 'UPDATE' : 'DELETE';
+      method === 'POST' ? 'CREATE' : method === 'DELETE' ? 'DELETE' : 'UPDATE';
 
     return next.handle().pipe(
       tap((responseBody) => {

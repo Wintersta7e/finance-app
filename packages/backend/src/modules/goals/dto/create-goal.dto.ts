@@ -14,12 +14,12 @@ export class CreateGoalDto {
   @IsNotEmpty()
   name!: string;
 
-  @IsNumber()
+  @IsNumber({ allowInfinity: false, allowNaN: false })
   @IsPositive()
   targetAmount!: number;
 
   @IsOptional()
-  @IsNumber()
+  @IsNumber({ allowInfinity: false, allowNaN: false })
   @Min(0)
   currentAmount?: number;
 

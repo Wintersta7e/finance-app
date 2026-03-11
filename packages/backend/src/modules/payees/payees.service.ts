@@ -60,14 +60,14 @@ export class PayeesService {
     await this.findOne(id);
 
     const transactionCount = await this.prisma.transaction.count({
-      where: { payeeId: id },
+      where: { payeeId: id, deletedAt: null },
     });
     if (transactionCount > 0) {
       throw new EntityInUseException('payee', 'transactions');
     }
 
     const recurringRuleCount = await this.prisma.recurringRule.count({
-      where: { payeeId: id },
+      where: { payeeId: id, deletedAt: null },
     });
     if (recurringRuleCount > 0) {
       throw new EntityInUseException('payee', 'recurring rules');

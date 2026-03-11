@@ -7,17 +7,11 @@ export class SettingsService {
   constructor(private prisma: PrismaService) {}
 
   async getSettings() {
-    let settings = await this.prisma.appSettings.findUnique({
+    return this.prisma.appSettings.upsert({
       where: { id: 1 },
+      update: {},
+      create: { id: 1 },
     });
-
-    if (!settings) {
-      settings = await this.prisma.appSettings.create({
-        data: { id: 1 },
-      });
-    }
-
-    return settings;
   }
 
   async updateSettings(dto: UpdateSettingsDto) {

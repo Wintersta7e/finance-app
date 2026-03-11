@@ -1,33 +1,74 @@
 #!/usr/bin/env bash
 # Prepare backend for Electron packaging by creating a standalone node_modules
 # with only production dependencies (not hoisted by npm workspaces).
+#
+# When running from WSL targeting Windows, uses cmd.exe for npm operations
+# so native modules (Prisma engine) get the correct platform binaries.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BACKEND_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 ROOT_DIR="$(cd "$BACKEND_DIR/../.." && pwd)"
-STAGING_DIR="$(mktemp -d)"
+STAGING_DIR="$BACKEND_DIR/staging"
+
+# Detect if we're in WSL targeting a Windows mount
+is_wsl_windows_mount() {
+  [[ "$(uname -r)" == *microsoft* ]] && [[ "$BACKEND_DIR" == /mnt/* ]]
+}
+
+# Convert WSL path to Windows path for cmd.exe
+to_win_path() {
+  echo "$1" | sed 's|^/mnt/\(.\)|\U\1:|' | sed 's|/|\\|g'
+}
 
 echo "=== Preparing production backend ==="
 echo "Backend dir: $BACKEND_DIR"
 
-# 1. Build TypeScript (run from root so workspace bins are on PATH)
+# 1. Build TypeScript
 echo "Building TypeScript..."
 cd "$ROOT_DIR"
 npm run build --workspace=packages/backend
 
-# 2. Install production deps in isolated staging dir (outside workspace)
-echo "Installing production dependencies..."
+# 2. Set up staging directory
+rm -rf "$STAGING_DIR"
+mkdir -p "$STAGING_DIR"
 cp "$BACKEND_DIR/package.json" "$STAGING_DIR/"
-cd "$STAGING_DIR"
-npm install --omit=dev 2>&1
+cp -r "$BACKEND_DIR/prisma" "$STAGING_DIR/prisma"
 
-# 3. Copy standalone node_modules back
+# 3. Install production deps + generate Prisma client
+if is_wsl_windows_mount; then
+  WIN_STAGING="$(to_win_path "$STAGING_DIR")"
+  echo "WSL detected on Windows mount — using cmd.exe for npm install"
+  echo "Windows staging path: $WIN_STAGING"
+
+  # Install production deps (Windows binaries)
+  cmd.exe /c "cd /d $WIN_STAGING && npm install --omit=dev" 2>&1
+
+  # Temporarily install prisma CLI for client generation
+  cmd.exe /c "cd /d $WIN_STAGING && npm install prisma@6 --save-dev && npx prisma generate --schema=prisma\\schema.prisma" 2>&1
+
+  # Remove prisma CLI and prune dev deps
+  cmd.exe /c "cd /d $WIN_STAGING && npm uninstall prisma && npm prune --omit=dev" 2>&1
+else
+  echo "Native environment — using npm directly"
+  cd "$STAGING_DIR"
+  npm install --omit=dev 2>&1
+
+  # Temporarily install prisma CLI for client generation
+  npm install prisma@6 --save-dev 2>&1
+  npx prisma generate --schema=prisma/schema.prisma 2>&1
+
+  # Remove prisma CLI and prune dev deps
+  npm uninstall prisma 2>&1
+  npm prune --omit=dev 2>&1
+fi
+
+# 4. Copy standalone node_modules back
 echo "Copying production node_modules..."
 rm -rf "$BACKEND_DIR/node_modules_prod"
 mv "$STAGING_DIR/node_modules" "$BACKEND_DIR/node_modules_prod"
 
-# 4. Clean up
+# 5. Clean up
 rm -rf "$STAGING_DIR"
 
 echo "=== Production backend ready ==="

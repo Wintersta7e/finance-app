@@ -22,7 +22,7 @@
   "dependencies": {
     "@nestjs/common": "^11.1.13",
     "@nestjs/core": "^11.1.16",
-    "@nestjs/mapped-types": "^2.1.0",
+    "@nestjs/mapped-types": "^2.1.1",
     "@nestjs/platform-express": "^11.1.13",
     "@nestjs/swagger": "^11.2.6",
     "@prisma/adapter-better-sqlite3": "^7.7.0",

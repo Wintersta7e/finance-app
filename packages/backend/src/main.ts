@@ -4,10 +4,11 @@ import { json } from 'express';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/http-exception.filter';
 import { DecimalSerializerInterceptor } from './common/interceptors/decimal-serializer.interceptor';
+import { AuthTokenGuard } from './common/guards/auth-token.guard';
 
 // Default DATABASE_URL for development (production sets it via Electron main process)
 if (!process.env.DATABASE_URL) {
-  process.env.DATABASE_URL = 'file:./dev.db';
+  process.env.DATABASE_URL = 'file:./prisma/dev.db';
 }
 
 async function bootstrap() {
@@ -34,6 +35,7 @@ async function bootstrap() {
 
   app.useGlobalFilters(new GlobalExceptionFilter());
   app.useGlobalInterceptors(new DecimalSerializerInterceptor());
+  app.useGlobalGuards(new AuthTokenGuard());
   app.enableShutdownHooks();
 
   if (process.env.NODE_ENV !== 'production') {

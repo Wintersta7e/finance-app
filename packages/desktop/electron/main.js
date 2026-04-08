@@ -17,6 +17,9 @@ let backendProc = null;
 let isQuitting = false;
 let logStream = null;
 
+// Shared auth token — prevents other local processes from accessing the backend API
+const BACKEND_AUTH_TOKEN = isDev ? '' : crypto.randomBytes(32).toString('hex');
+
 function initLogFile() {
   if (isDev) return;
   try {
@@ -119,28 +122,33 @@ function killStalePid() {
 }
 
 /**
- * Checks whether a SQL string contains semicolons inside quoted strings,
- * which would break the naive split-on-semicolon approach.
- *
- * Returns true if a suspicious semicolon-in-string is detected.
+ * Split a SQL string into individual statements, handling quoted strings
+ * that may contain semicolons. Supports '' and "" escape sequences.
  */
-function hasSemicolonInQuotedString(sql) {
-  // Walk character by character tracking quote state
+function splitSqlStatements(sql) {
+  const statements = [];
+  let current = '';
   let inSingle = false;
   let inDouble = false;
   for (let i = 0; i < sql.length; i++) {
     const ch = sql[i];
     if (ch === "'" && !inDouble) {
-      if (inSingle && sql[i + 1] === "'") { i++; } // skip escaped quote ''
-      else { inSingle = !inSingle; }
+      if (inSingle && sql[i + 1] === "'") { current += "''"; i++; continue; }
+      inSingle = !inSingle;
     } else if (ch === '"' && !inSingle) {
-      if (inDouble && sql[i + 1] === '"') { i++; } // skip escaped quote ""
-      else { inDouble = !inDouble; }
-    } else if (ch === ';' && (inSingle || inDouble)) {
-      return true;
+      if (inDouble && sql[i + 1] === '"') { current += '""'; i++; continue; }
+      inDouble = !inDouble;
+    } else if (ch === ';' && !inSingle && !inDouble) {
+      const trimmed = current.trim();
+      if (trimmed.length > 0) statements.push(trimmed);
+      current = '';
+      continue;
     }
+    current += ch;
   }
-  return false;
+  const trimmed = current.trim();
+  if (trimmed.length > 0) statements.push(trimmed);
+  return statements;
 }
 
 async function runMigrations(dbUrl) {
@@ -213,21 +221,9 @@ async function runMigrations(dbUrl) {
       const sql = fs.readFileSync(sqlPath, 'utf-8');
       const checksum = crypto.createHash('sha256').update(sql).digest('hex');
 
-      // CR-33: The semicolon-based SQL splitter is naive and breaks on semicolons
-      // inside string literals (e.g., INSERT VALUES containing ';'). Prisma's
-      // machine-generated migration SQL normally avoids this, but we check and
-      // skip any migration that contains semicolons within quoted strings to be safe.
-      if (hasSemicolonInQuotedString(sql)) {
-        log('warn', `Migration "${dirName}" contains semicolons inside quoted strings — skipping (manual intervention required)`);
-        continue;
-      }
-
-      // Split on semicolons — safe only for SQL without semicolons in string literals
-      // (see hasSemicolonInQuotedString check above).
-      const statements = sql
-        .split(';')
-        .map((s) => s.trim())
-        .filter((s) => s.length > 0);
+      // Quote-aware SQL statement splitter — handles semicolons inside
+      // single/double-quoted strings and '' / "" escape sequences.
+      const statements = splitSqlStatements(sql);
 
       for (const stmt of statements) {
         await prisma.$executeRawUnsafe(stmt);
@@ -270,6 +266,7 @@ async function startBackend() {
     ...process.env,
     NODE_ENV: 'production',
     DATABASE_URL: dbUrl,
+    BACKEND_AUTH_TOKEN,
   };
 
   log('info', 'Backend root:', backendRoot);
@@ -389,7 +386,9 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      sandbox: true,
       backgroundThrottling: false,
+      preload: path.join(__dirname, 'preload.js'),
     },
   });
 
@@ -429,6 +428,9 @@ function createWindow() {
 
 app.whenReady().then(() => {
   initLogFile();
+
+  // Make auth token available to preload script via process.env
+  process.env.BACKEND_AUTH_TOKEN = BACKEND_AUTH_TOKEN;
 
   // Show window immediately — renderer shows splash screen while backend boots
   createWindow();

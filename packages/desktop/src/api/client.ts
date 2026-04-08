@@ -17,11 +17,16 @@ import type {
   ImportResult,
 } from './types';
 
+function getAuthHeaders(): Record<string, string> {
+  const token = window.financeApp?.authToken;
+  return token ? { 'X-Auth-Token': token } : {};
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   for (let attempt = 0; attempt <= 1; attempt++) {
     try {
       const res = await fetch(`${API_BASE_URL}${path}`, {
-        headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders(), ...(options.headers || {}) },
         ...options,
       });
       const text = await res.text().catch(() => '');
@@ -238,12 +243,12 @@ export const api = {
 
   // Export / Import
   async exportJson(): Promise<Blob> {
-    const res = await fetch(`${API_BASE_URL}/export/json`);
+    const res = await fetch(`${API_BASE_URL}/export/json`, { headers: getAuthHeaders() });
     if (!res.ok) throw new Error(`Export failed: ${res.status}`);
     return res.blob();
   },
   async exportCsv(): Promise<Blob> {
-    const res = await fetch(`${API_BASE_URL}/export/csv/transactions`);
+    const res = await fetch(`${API_BASE_URL}/export/csv/transactions`, { headers: getAuthHeaders() });
     if (!res.ok) throw new Error(`CSV export failed: ${res.status}`);
     return res.blob();
   },
@@ -279,7 +284,7 @@ export const api = {
 
   async checkHealth(): Promise<boolean> {
     try {
-      const res = await fetch(`${API_BASE_URL}/health`);
+      const res = await fetch(`${API_BASE_URL}/health`, { headers: getAuthHeaders() });
       return res.ok;
     } catch {
       return false;

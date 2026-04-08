@@ -2,12 +2,13 @@
 
 Personal finance tracking desktop app — track income, expenses, budgets, and savings goals with everything running locally.
 
-![Electron](https://img.shields.io/badge/Electron-40-47848F?logo=electron)
+![Electron](https://img.shields.io/badge/Electron-41-47848F?logo=electron)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)
 ![NestJS](https://img.shields.io/badge/NestJS-11-E0234E?logo=nestjs)
-![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript)
+![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss)
-![Framer Motion](https://img.shields.io/badge/Framer_Motion-12-0055FF?logo=framer)
+![Prisma](https://img.shields.io/badge/Prisma-7-2D3748?logo=prisma)
+![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite)
 ![SQLite](https://img.shields.io/badge/SQLite-3-003B57?logo=sqlite)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
 
@@ -22,24 +23,25 @@ A portable Windows desktop application for personal finance management. No exter
 ## Features
 
 ### Core
-- **Accounts** — checking, savings, cash with balances
-- **Transactions** — income, fixed costs, variable expenses, transfers with pagination and date filtering
+- **Accounts** — checking, savings, credit, investment, cash with balances
+- **Transactions** — income, fixed costs, variable expenses, transfers with pagination and month navigation
 - **Categories** — organize transactions, track fixed vs variable costs
 - **Recurring Rules** — automatic transaction posting (daily, weekly, monthly, yearly)
-- **Budgets** — spending limits per category with period tracking
+- **Budgets** — spending limits per category with progress tracking and projections
 
 ### Analytics
 - **Monthly Summary** — income, fixed costs, variable expenses, savings at a glance
 - **Category Breakdown** — where your money goes each month
-- **Net Worth Trend** — balance over time across all accounts
+- **Net Worth Trend** — balance over time across all accounts (up to 12 months)
 - **Budget vs Actual** — track spending against budget limits
 - **Recurring Costs** — overview of fixed monthly obligations
+- **Savings History** — 6-month income vs expenses comparison
 
 ### Additional
 - **Tags & Payees** — label and organize transactions
 - **Savings Goals** — track progress toward targets with contributions
 - **Export/Import** — JSON full backup, CSV transaction export, restore with replace or merge
-- **Audit Log** — automatic tracking of all data changes with expandable diffs
+- **Audit Log** — automatic tracking of all data changes
 - **Settings** — currency, first day of month/week preferences
 - **Command Palette** — quick keyboard navigation (`Ctrl+K`)
 - **Swagger Docs** — full API documentation at `/api/docs` (dev mode)
@@ -48,11 +50,11 @@ A portable Windows desktop application for personal finance management. No exter
 
 | Layer | Technology |
 |-------|-----------|
-| Desktop | [Electron 40](https://electronjs.org) |
-| Frontend | [React 19](https://react.dev) + [TypeScript](https://typescriptlang.org) + [Vite](https://vite.dev) |
-| Styling | [Tailwind CSS 4](https://tailwindcss.com) + [Framer Motion](https://motion.dev) |
+| Desktop | [Electron 41](https://electronjs.org) |
+| Frontend | [React 19](https://react.dev) + [TypeScript 6](https://typescriptlang.org) + [Vite 8](https://vite.dev) |
+| Styling | [Tailwind CSS 4](https://tailwindcss.com) + [Framer Motion 12](https://motion.dev) |
 | Backend | [NestJS 11](https://nestjs.com) |
-| ORM | [Prisma 6](https://prisma.io) |
+| ORM | [Prisma 7](https://prisma.io) + better-sqlite3 adapter |
 | Database | SQLite (file-based, portable) |
 | Charts | [Recharts](https://recharts.org) |
 
@@ -88,7 +90,7 @@ bash build-all.sh           # build portable Windows EXE
 bash build-all.sh
 ```
 
-Output: `packages/desktop/dist/Finance Desktop-<version>-portable.exe`
+Output: `packages/desktop/dist/Finance Desktop-<version>-portable.exe` (~105 MB)
 
 The portable executable bundles the backend, frontend, and database — no installation required.
 
@@ -98,28 +100,33 @@ The portable executable bundles the backend, frontend, and database — no insta
 packages/
 ├── backend/                NestJS REST API (port 8080)
 │   ├── prisma/             Database schema and migrations
+│   ├── prisma.config.ts    Prisma 7 datasource configuration
 │   └── src/
-│       ├── modules/        Feature modules (12 total)
+│       ├── generated/      Prisma client (auto-generated)
+│       ├── modules/        Feature modules (14 total)
 │       │   ├── accounts/       CRUD + balance tracking
-│       │   ├── categories/     Income/expense classification
-│       │   ├── transactions/   Paginated with date filtering
-│       │   ├── recurring-rules/ Auto-post scheduling
-│       │   ├── budgets/        Per-category spending limits
 │       │   ├── analytics/      Summaries, trends, breakdowns
-│       │   ├── tags/           Transaction labels
-│       │   ├── payees/         Transaction payees
-│       │   ├── goals/          Savings goals + contributions
+│       │   ├── audit/          Change tracking interceptor
+│       │   ├── budgets/        Per-category spending limits
+│       │   ├── categories/     Income/expense classification
 │       │   ├── export/         JSON/CSV export, JSON import
-│       │   ├── audit/          Change tracking
-│       │   └── seed/           Initial data setup
+│       │   ├── goals/          Savings goals + contributions
+│       │   ├── health/         Health check endpoint
+│       │   ├── payees/         Transaction payees
+│       │   ├── recurring-rules/ Auto-post scheduling
+│       │   ├── seed/           Initial data setup
+│       │   ├── settings/       App preferences
+│       │   ├── tags/           Transaction labels
+│       │   └── transactions/   Paginated with date filtering
+│       ├── prisma/         PrismaService (better-sqlite3 adapter)
 │       └── common/         Shared filters, interceptors, DTOs
 └── desktop/                Electron + React frontend
-    ├── electron/           Main process (spawns backend via fork)
+    ├── electron/           Main process (backend fork, migrations)
     └── src/
-        ├── pages/          Route pages (13 total)
-        ├── components/     UI primitives (CommandPalette, SidePanel, SparkLine, etc.)
-        ├── api/            Backend client
-        └── hooks/          Shared React hooks (useIsMounted, useCategories, etc.)
+        ├── pages/          13 pages (Dashboard → Settings)
+        ├── components/     UI (SidePanel, CommandPalette, SparkLine, etc.)
+        ├── api/            Backend client + types
+        └── hooks/          Shared React hooks
 ```
 
 ## API
@@ -137,34 +144,20 @@ Base URL: `http://127.0.0.1:8080/api`
 | `/api/tags` | CRUD transaction tags |
 | `/api/payees` | CRUD payees |
 | `/api/goals` | CRUD savings goals + contributions |
+| `/api/settings` | App preferences |
 | `/api/analytics/*` | Month summary, category breakdown, net worth, budget vs actual, recurring costs |
 | `/api/export/*` | JSON/CSV export, JSON import |
 | `/api/audit/*` | Audit log queries |
-| `/api/docs` | Swagger UI |
+| `/api/docs` | Swagger UI (dev mode only) |
 
 ## Testing
 
-201 backend unit tests with 82% statement coverage.
+201 backend unit tests across 18 suites.
 
 ```bash
 npm test                    # all tests
 npm -w @finance/backend run test:cov   # with coverage report
 ```
-
-| Module | Tests |
-|--------|-------|
-| Accounts | 22 |
-| Categories | 22 |
-| Transactions | 22 |
-| Recurring Rules | 26 |
-| Analytics | 19 |
-| Budgets | 19 |
-| Tags | 19 |
-| Payees | 19 |
-| Goals | 17 |
-| Export | 8 |
-| Audit | 8 |
-| **Total** | **201** |
 
 ## Contributing
 

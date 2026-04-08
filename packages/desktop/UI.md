@@ -1,51 +1,103 @@
 # UI & Design System
 
-Unified guide to the desktop UI layer: layout, components, flows, and visual system.
+"Neon Pulse" dark theme — Tailwind CSS 4 + Framer Motion on React 19.
 
-## Shell & layout
-- Sidebar navigation with brand header; routes: Dashboard, Accounts, Transactions, Categories, Recurring, Budgets, Analytics.
-- Main area uses `Page` + `Card` primitives; content width capped around ~1200px for readability.
-- Dark theme tokens defined in `src/theme.ts`; global styles in `src/index.css`.
-- Spacing rhythm: 8/12/20/24 px multiples; prefer `gap` on flex/grid.
+## Visual System
 
-## Theme tokens
-- Source: `src/theme.ts`
-- Colors: `bg`, `bgElevated`, `sidebarBg`, `borderSoft`, `accent`, `danger`, `success`, `textPrimary`, `textMuted`.
-- Radii: `radii.sm|md|lg|pill` for controls, cards, pills.
-- Shadow: `shadow.card` for raised surfaces.
-- Font: Inter/Segoe stack is set globally in `src/index.css`.
+- **Theme**: Dark background with neon accent colors (green, cyan, indigo, rose, orange)
+- **CSS**: Tailwind CSS 4 utility classes with CSS custom properties for theme tokens
+- **Animation**: Framer Motion for page transitions, panel slides, chart reveals
+- **Font**: Inter variable weight via `@fontsource-variable/inter`
+- **Spacing**: Tailwind defaults (4px base), `gap` on flex/grid layouts
 
-## Shared components
-- `Page`: page wrapper with title/subtitle/actions and `max-width` constraint.
-- `Card`: elevated surface with optional title/subtitle/actions; use for tables, charts, and summary blocks.
-- `Button`: variants `primary | ghost | danger`; consistent padding/radius.
-- `Modal`: standardized overlay, padding, close button; accepts `footer` for actions.
-- `FormField`: label + hint wrapper for vertical forms.
-- `QuickTransactionForm` (`components/transactions`): inline form for income/expense/transfer with auto-signed amounts and inline category creation.
-- `useCategories` hook: load categories, reload, and create inline for dropdowns.
+### Color Tokens (CSS variables)
 
-## Tables & cards
-- Tables live inside `Card` to get borders/shadows; headers use muted text, rows highlight on hover.
-- Summary tiles use `Card` with a gradient tint and bold values; grid via `repeat(auto-fit, minmax(...))`.
+| Token | Usage |
+|-------|-------|
+| `--color-neon-green` | Primary accent, income, success |
+| `--color-neon-cyan` | Transfers, secondary accent |
+| `--color-neon-indigo` | Charts, expenses comparison |
+| `--color-neon-rose` | Fixed costs, danger |
+| `--color-neon-orange` | Variable expenses, warnings |
+| `--color-neon-text` | Primary text |
+| `--color-neon-text-secondary` | Secondary text |
+| `--color-neon-text-muted` | Labels, hints |
+| `--color-neon-text-faint` | Timestamps, tertiary |
+| `--color-neon-border` | Default borders |
+| `--color-neon-surface` | Card/panel backgrounds |
+| `--color-neon-elevated` | Elevated surfaces |
 
-## Forms & modals
-- Use `Modal` + `FormField` for budgets/recurring dialogs: labels always visible, 0.75rem vertical gaps.
-- Inputs/selects share dark fill, soft borders, and accent focus ring from global styles.
-- Button pairs: ghost for cancel, primary for submit, align right with `gap: 0.75rem`.
-- Amount fields allow free typing; values are parsed/validated on submit.
+## Components
 
-## Charts
-- Wrap charts in `Card` and set a fixed height container (`div` with `height: 260-300px`).
-- Axes/grid use muted strokes; tooltips inherit dark surface/border from tokens.
+### Layout
+- **CommandStrip** — Sidebar icon navigation, page routing
+- **SidePanel** — Slide-out panel for create/edit forms (all CRUD pages)
+- **EmptyState** — Placeholder with optional action button
 
-## Key flows
-- **Add transactions**: QuickTransactionForm on Dashboard/Transactions; amounts auto-sign by type. Transactions table supports Delete with confirmation.
-- **Manage categories**: Categories page + inline creation from category dropdowns (transactions, recurring rules, budgets).
-- **Recurring rules**: DAILY/WEEKLY/MONTHLY/YEARLY periods; amount editable; generate-next creates the next dated transaction with end-date guard.
-- **Budgets**: Monthly budgets per category; inline category creation available.
-- **Analytics**: Charts (net worth, category breakdown, savings) refresh after data changes via shared refresh token; recurring costs card shows monthly total of active recurring expenses.
+### Data Display
+- **DateGroupedList** — Memoized date-grouped list (transactions)
+- **SparkBars** — Inline bar chart (dashboard income/spending history)
+- **SparkLine** — Inline line chart (net worth mini)
+- **OrbitalRing** — Circular progress ring (budget health)
+- **MetricStrip** — Horizontal metric row
+- **InsightBlock** — Contextual info in side panels
+- **PillChip** — Category/tag pill labels
 
-## Typography & cues
-- Title sizes: App title ~26px bold; section titles ~20px semibold; card labels ~14px muted; values ~18px semibold.
-- Primary actions in accent color; secondary ghost; destructive red.
-- Use `textMuted` for secondary info and `textPrimary` for main values; hover states on tables; focus ring on inputs.
+### Interaction
+- **CommandPalette** — `Ctrl+K` fuzzy search overlay for pages and actions
+- **DropdownMenu** — Context menus with keyboard navigation
+- **Toast** — Notification toasts (success/error)
+- **ErrorBoundary** — React error boundary with fallback UI
+
+### Charts (Recharts)
+- AreaChart for net worth trend
+- BarChart for savings per month comparison
+- Stacked bar for category breakdown
+
+## Page Pattern
+
+All 13 pages follow a consistent structure:
+
+```
+Hero header (title + subtitle)
+  → Top bar (filters, search, navigation, add button)
+  → Data list/grid
+  → SidePanel for create/edit
+```
+
+### CRUD Flow
+1. List loads on mount via `useCallback` + `useEffect`
+2. Click item → `SidePanel` opens with edit form
+3. Click "New" → `SidePanel` opens with empty form
+4. Save → API call → close panel → reload list → `onDataChanged()` callback
+5. Delete → confirm → API call → close panel → reload
+
+### State Pattern
+```typescript
+const [items, setItems] = useState<T[]>([]);
+const [selected, setSelected] = useState<T | null>(null);
+const [creating, setCreating] = useState(false);
+const [form, setForm] = useState<Form>(EMPTY);
+const [saving, setSaving] = useState(false);
+const [error, setError] = useState<string | null>(null);
+```
+
+## Form Conventions
+
+- Functional state updates: `setForm(prev => ({ ...prev, field: val }))`
+- Validation before `setSaving(true)` — prevents button flicker on validation errors
+- `setError(null)` at start of handlers
+- `useIsMounted()` guard on all async callbacks
+- Native `<select>` elements need explicit `background-color`/`color` for dark theme (Chromium ignores `color-scheme: dark`)
+- Avoid `inputMode="decimal"` — causes IME issues in Electron on Windows
+
+## Typography
+
+| Element | Style |
+|---------|-------|
+| Page title | `text-3xl font-extrabold tracking-tight` |
+| Section label | `text-[9px] uppercase tracking-[2px] text-neon-text-muted` |
+| Hero metric | `text-4xl font-black tracking-tighter` |
+| Body text | `text-sm text-neon-text` |
+| Muted info | `text-xs text-neon-text-muted` |
+| Timestamps | `text-[10px] text-neon-text-faint` |

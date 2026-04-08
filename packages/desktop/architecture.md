@@ -1,44 +1,74 @@
 # Architecture
 
 ## Overview
-Electron shell hosting a Vite/React TypeScript frontend that communicates with the local NestJS backend (`http://127.0.0.1:8080/api`). Development loads the Vite dev server in Electron; production loads the built `dist/` assets.
 
-## Runtime flow
-- **Electron main (`electron/main.js`)** creates a `BrowserWindow`. In development it loads `http://localhost:5173` (Vite dev server) and opens devtools; in production it loads `dist/index.html`, runs Prisma migrations via `execSync`, then spawns the compiled NestJS backend via `fork()` (`dist/src/main.js`). The SQLite database is stored alongside the portable EXE in `data/finance.db`.
-- The backend binds to port 8080; ensure it is free or the UI will show connection errors until restarted.
-- **Renderer (React)** lives under `src/`, bootstrapped by `src/main.tsx`. `src/App.tsx` renders a sidebar layout and switches between Dashboard, Accounts, Transactions, Categories, Recurring Rules, Analytics, and Budgets pages that fetch backend data via the API client (with retry logic for startup race conditions). UI uses shared primitives in `src/components/ui/` with tokens from `src/theme.ts`.
-- **IPC/Node integration**: disabled (`nodeIntegration: false`, `contextIsolation: true`, `backgroundThrottling: false`); renderer uses standard browser APIs to call the backend.
-- **Focus handling**: main.js listens for window `focus` events and calls `webContents.focus()` to restore input focus after alt-tabbing — fixes Chromium/Electron focus bugs on Windows.
+Electron shell hosting a Vite 8 / React 19 / TypeScript 6 frontend that communicates with the local NestJS backend (`http://127.0.0.1:8080/api`). Development loads the Vite dev server in Electron; production loads the built `build/` assets.
 
-## Key directories
-- `electron/` — main process code.
-- `src/api/` — base URL config, DTO typings, and a fetch wrapper with retry logic for backend endpoints.
-- `src/components/` — layout shell, navigation, charts (Recharts), shared UI primitives, quick transaction form (`components/transactions`), and UI docs (`UI.md`).
-- `src/theme.ts` — design tokens (colors, radii, shadows).
-- `src/pages/` — dashboard, accounts, transactions, recurring rules, analytics, and budgets views.
-- `src/` — React entry (`main.tsx`) and app shell (`App.tsx`).
-- `public/` — static assets copied into the build.
-- `dist/` — Vite build output consumed by Electron in production mode.
+## Runtime Flow
 
-## Scripts and tooling
-- `dev`: Vite dev server (full environment started from monorepo root via `npm run dev`).
-- `build`: Vite build for the renderer.
-- `build:desktop`: builds renderer and packages Electron app (electron-builder) bundling compiled NestJS backend and production `node_modules` via extraResources.
-- `lint`: ESLint.
-- `typecheck`: TypeScript type checking.
+- **Electron main (`electron/main.js`)** creates a `BrowserWindow`. In development it loads `http://localhost:5173` (Vite dev server) and opens DevTools; in production it loads `build/index.html`.
+- **Migrations**: Before starting the backend, `main.js` runs a lightweight migration runner using PrismaClient with the `@prisma/adapter-better-sqlite3` driver. It reads SQL from `prisma/migrations/*/migration.sql` and applies via `$executeRawUnsafe`, compatible with `prisma migrate deploy` checksums.
+- **Backend**: Spawned via `fork()` as a child process (`dist/src/main.js`). IPC `'ready'` signal coordinates startup. Shutdown via IPC `'shutdown'` message (not SIGTERM — Windows compatibility). PID file tracks orphan processes.
+- **Database**: SQLite stored in `<userData>/data/finance.db` (packaged) or `data/` next to portable EXE.
+- **Security**: `nodeIntegration: false`, `contextIsolation: true`. No preload script — renderer uses standard `fetch()` to call the backend API. `setWindowOpenHandler` blocks popups, `will-navigate` blocks external navigation.
 
-## Backend integration notes
-- Base URL: `http://127.0.0.1:8080/api`. Backend CORS is already open for local Electron/Vite usage.
-- NestJS backend compiled with `tsc`, run via `fork()` with IPC ready signal for startup coordination.
-- Prisma ORM with SQLite — migrations run in Electron main process before backend fork.
+## Key Directories
 
-## UI patterns
+```
+electron/           Main process (backend lifecycle, migrations, logging)
+src/
+├── api/            Backend client (fetch wrapper with retry), types, config
+├── pages/          13 route pages (Dashboard through Settings)
+├── components/     UI primitives (see UI section below)
+├── hooks/          Shared hooks (useIsMounted, useCategories, useCommandPalette, useBackendReady)
+└── main.tsx        React entry → App.tsx (sidebar router)
+build/              Vite output (consumed by Electron in production)
+dist/               electron-builder output (win-unpacked, portable EXE)
+```
 
-### Modal
-- Auto-focuses first focusable element when opened
-- Closes on backdrop click (using `onMouseDown` with target check to avoid event interference with inputs)
-- Supports `zIndex` prop for nested modals (default 50, use 60 for nested)
+## UI System
 
-### Form inputs
-- Use functional state updates to avoid stale closures: `onChange={(e) => { const val = e.target.value; setForm(prev => prev ? { ...prev, field: val } : prev); }}`
-- Avoid `inputMode="decimal"` — triggers IME issues in Electron on Windows that block text input
+"Neon Pulse" dark theme implemented with Tailwind CSS 4 + Framer Motion.
+
+### Components
+
+| Component | Purpose |
+|-----------|---------|
+| SidePanel | Slide-out editor panel for CRUD forms |
+| CommandPalette | `Ctrl+K` fuzzy search for pages and actions |
+| CommandStrip | Sidebar navigation with page icons |
+| DateGroupedList | Memoized date-grouped transaction list |
+| SparkBars / SparkLine | Inline mini-charts for dashboard metrics |
+| OrbitalRing | Circular progress indicator (budget health) |
+| GlowBar | Animated loading indicator |
+| MetricStrip | Horizontal metric display row |
+| InsightBlock | Contextual info block in side panels |
+| Toast | Notification toasts |
+| DropdownMenu | Context menus |
+| EmptyState | Empty data placeholder with optional action |
+| PillChip | Category/tag pill labels |
+
+### Patterns
+
+- All pages use `useIsMounted()` for unmount safety in fetch callbacks and mutation handlers
+- Functional state updates: `setForm(prev => ({ ...prev, field: val }))`
+- UTC date construction: `Date.UTC()` and `getUTCFullYear()`/`getUTCMonth()` for all API date params
+- Memoization: `useMemo` for sorted/filtered/grouped data, `useCallback` for stable references
+- Load generation counters for race condition prevention in paginated fetches
+
+## Scripts
+
+| Script | Description |
+|--------|-------------|
+| `dev` | Vite dev server |
+| `build` | Vite production build to `build/` |
+| `build:desktop` | Full pipeline: backend deps + Vite build + electron-builder |
+| `lint` | ESLint |
+| `typecheck` | TypeScript type checking |
+
+## Backend Integration
+
+- Base URL: `http://127.0.0.1:8080/api` (backend binds to localhost only)
+- CORS: `['null']` in production (Electron `file://` origin), localhost origins in dev
+- Backend compiled with `tsc`, spawned via `fork()` with IPC ready signal
+- Prisma 7 + better-sqlite3 — migrations run in Electron main process before backend fork

@@ -3,6 +3,7 @@
   "private": true,
   "version": "2.0.0",
   "description": "Finance desktop app with embedded backend",
+  "repository": "github:Wintersta7e/finance-app",
   "main": "electron/main.js",
   "scripts": {
     "dev": "vite",

@@ -21,6 +21,15 @@ jobs:
 
       - run: npm ci
 
+      # Lockfile generated on Linux/WSL lacks Windows native bindings.
+      - name: Install Windows native bindings
+        run: npm install @rolldown/binding-win32-x64-msvc @rollup/rollup-win32-x64-msvc @tailwindcss/oxide-win32-x64-msvc lightningcss-win32-x64-msvc @esbuild/win32-x64 @unrs/resolver-binding-win32-x64-msvc --no-save
+
+      - name: Read Electron version
+        id: electron
+        shell: bash
+        run: echo "version=$(node -e "console.log(require('./node_modules/electron/package.json').version)")" >> "$GITHUB_OUTPUT"
+
       - name: Generate Prisma Client
         run: npx prisma generate
         working-directory: packages/backend
@@ -37,6 +46,7 @@ jobs:
           cp package.json staging/
           cd staging
           npm install --omit=dev
+          npx @electron/rebuild --version "${{ steps.electron.outputs.version }}" --module-dir . --only better-sqlite3
           cd ..
           mv staging/node_modules node_modules_prod
           rm -rf staging
@@ -45,7 +55,7 @@ jobs:
         run: npm -w @finance/desktop run build
 
       - name: Build Windows portable and publish to GitHub Releases
-        run: npx electron-builder --win portable --publish always
+        run: npx electron-builder --win portable --publish always --config.electronVersion=${{ steps.electron.outputs.version }}
         working-directory: packages/desktop
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

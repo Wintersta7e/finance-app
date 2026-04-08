@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
@@ -19,12 +20,12 @@ export interface PaginatedResult<T> {
 export class TransactionsService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(query: TransactionQueryDto): Promise<PaginatedResult<any>> {
+  async findAll(query: TransactionQueryDto) {
     const safePage = Math.max(1, query.page || 1);
     const limit = query.limit || 20;
     const skip = (safePage - 1) * limit;
 
-    const where: any = { deletedAt: null };
+    const where: Prisma.TransactionWhereInput = { deletedAt: null };
 
     if (query.accountId) {
       where.accountId = query.accountId;

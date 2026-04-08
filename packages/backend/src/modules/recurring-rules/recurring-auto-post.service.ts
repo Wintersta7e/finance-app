@@ -55,11 +55,12 @@ export class RecurringAutoPostService {
       return { processed: 0, transactions: [] };
     }
 
-    // Process all rules in a single transaction for atomicity and performance
-    const transactions = await this.prisma.$transaction(async (tx) => {
-      const results: Transaction[] = [];
+    // Process each rule in its own transaction — rules are independent,
+    // so one failure should not prevent others from posting
+    const transactions: Transaction[] = [];
 
-      for (const rule of rules) {
+    for (const rule of rules) {
+      const transaction = await this.prisma.$transaction(async (tx) => {
         const newTransaction = await tx.transaction.create({
           data: {
             date: rule.nextOccurrence,
@@ -84,11 +85,11 @@ export class RecurringAutoPostService {
           data: { nextOccurrence: newNextOccurrence },
         });
 
-        results.push(newTransaction);
-      }
+        return newTransaction;
+      });
 
-      return results;
-    });
+      transactions.push(transaction);
+    }
 
     return {
       processed: transactions.length,

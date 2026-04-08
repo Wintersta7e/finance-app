@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
 export interface ExportData {
@@ -139,7 +140,7 @@ export class ExportService {
       throw new BadRequestException(`Invalid import mode: ${mode}. Must be 'replace' or 'merge'.`);
     }
 
-    return this.prisma.$transaction(async (tx: any) => {
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const summary: ImportSummary = {
         imported: {
           accounts: 0,
@@ -459,6 +460,30 @@ export class ExportService {
         if (typeof b.amount !== 'number' || !Number.isFinite(b.amount)) {
           throw new BadRequestException(
             `Invalid budget at index ${i}: amount must be a finite number`,
+          );
+        }
+      }
+    }
+
+    // Validate tag fields
+    if (Array.isArray(data.data.tags)) {
+      for (let i = 0; i < data.data.tags.length; i++) {
+        const t = data.data.tags[i];
+        if (typeof t.name !== 'string' || t.name.trim().length === 0) {
+          throw new BadRequestException(
+            `Invalid tag at index ${i}: name must be a non-empty string`,
+          );
+        }
+      }
+    }
+
+    // Validate payee fields
+    if (Array.isArray(data.data.payees)) {
+      for (let i = 0; i < data.data.payees.length; i++) {
+        const p = data.data.payees[i];
+        if (typeof p.name !== 'string' || p.name.trim().length === 0) {
+          throw new BadRequestException(
+            `Invalid payee at index ${i}: name must be a non-empty string`,
           );
         }
       }

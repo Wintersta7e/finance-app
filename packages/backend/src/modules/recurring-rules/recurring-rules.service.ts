@@ -57,7 +57,7 @@ export class RecurringRulesService {
     const startDateChanged = dto.startDate !== undefined;
     const periodChanged = dto.period !== undefined;
 
-    const data: Prisma.RecurringRuleUpdateInput = { ...dto };
+    const data: Prisma.RecurringRuleUncheckedUpdateInput = { ...dto };
 
     if (startDateChanged || periodChanged) {
       const startDate = dto.startDate ?? existing.startDate;

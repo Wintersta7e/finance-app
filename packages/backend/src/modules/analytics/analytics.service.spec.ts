@@ -48,9 +48,9 @@ describe('AnalyticsService', () => {
         { id: 5, type: 'VARIABLE_EXPENSE', amount: new Decimal(-200) },
       ];
       mockPrisma.transaction.findMany.mockResolvedValue(transactions);
-      mockPrisma.account.findMany.mockResolvedValue([
-        { id: 1, initialBalance: new Decimal(1000) },
-      ]);
+      mockPrisma.account.aggregate.mockResolvedValue({
+        _sum: { initialBalance: new Decimal(1000) },
+      });
       // For endBalance calculation
       mockPrisma.transaction.aggregate.mockResolvedValue({
         _sum: { amount: new Decimal(2500) }, // 5000 - 1000 - 500 - 800 - 200
@@ -67,9 +67,9 @@ describe('AnalyticsService', () => {
 
     it('should handle empty transactions', async () => {
       mockPrisma.transaction.findMany.mockResolvedValue([]);
-      mockPrisma.account.findMany.mockResolvedValue([
-        { id: 1, initialBalance: new Decimal(1000) },
-      ]);
+      mockPrisma.account.aggregate.mockResolvedValue({
+        _sum: { initialBalance: new Decimal(1000) },
+      });
       mockPrisma.transaction.aggregate.mockResolvedValue({ _sum: { amount: null } });
 
       const result = await service.getMonthSummary(2024, 3);
@@ -247,10 +247,9 @@ describe('AnalyticsService', () => {
 
   describe('calculateBalanceUpTo', () => {
     it('should sum initial balances and non-transfer transactions up to date', async () => {
-      mockPrisma.account.findMany.mockResolvedValue([
-        { id: 1, initialBalance: new Decimal(1000), deletedAt: null },
-        { id: 2, initialBalance: new Decimal(500), deletedAt: null },
-      ]);
+      mockPrisma.account.aggregate.mockResolvedValue({
+        _sum: { initialBalance: new Decimal(1500) }, // 1000 + 500
+      });
       mockPrisma.transaction.aggregate.mockResolvedValue({
         _sum: { amount: new Decimal(200) },
       });
@@ -258,7 +257,11 @@ describe('AnalyticsService', () => {
       const testDate = new Date('2024-03-15');
       const result = await service.calculateBalanceUpTo(testDate);
 
-      expect(result).toBe(1700); // 1000 + 500 + 200
+      expect(result).toBe(1700); // 1500 + 200
+      expect(mockPrisma.account.aggregate).toHaveBeenCalledWith({
+        where: { deletedAt: null },
+        _sum: { initialBalance: true },
+      });
       expect(mockPrisma.transaction.aggregate).toHaveBeenCalledWith({
         where: {
           deletedAt: null,
@@ -269,20 +272,17 @@ describe('AnalyticsService', () => {
       });
     });
 
-    it('should exclude soft-deleted accounts', async () => {
-      mockPrisma.account.findMany.mockResolvedValue([
-        { id: 1, initialBalance: new Decimal(1000), deletedAt: null },
-      ]);
+    it('should handle null initial balance sum', async () => {
+      mockPrisma.account.aggregate.mockResolvedValue({
+        _sum: { initialBalance: null },
+      });
       mockPrisma.transaction.aggregate.mockResolvedValue({
         _sum: { amount: null },
       });
 
       const result = await service.calculateBalanceUpTo(new Date('2024-03-15'));
 
-      expect(result).toBe(1000);
-      expect(mockPrisma.account.findMany).toHaveBeenCalledWith({
-        where: { deletedAt: null },
-      });
+      expect(result).toBe(0);
     });
   });
 });

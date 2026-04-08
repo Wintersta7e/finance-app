@@ -70,8 +70,8 @@ function isoDate(d: Date): string {
 }
 
 function monthRange(year: number, month: number): { from: string; to: string } {
-  const from = new Date(year, month, 1);
-  const to = new Date(year, month + 1, 0);
+  const from = new Date(Date.UTC(year, month, 1));
+  const to = new Date(Date.UTC(year, month + 1, 1) - 1);
   return { from: isoDate(from), to: isoDate(to) };
 }
 
@@ -202,17 +202,16 @@ export function TransactionsPage({ onDataChanged }: TransactionsPageProps) {
   }, [refDataToken, isMounted]);
 
   /* ── Load transactions ── */
-  const loadingRef = useRef(false);
+  const loadGenRef = useRef(0);
   const loadTransactions = useCallback(
     (pageNum: number) => {
-      if (loadingRef.current) return;
-      loadingRef.current = true;
+      const gen = ++loadGenRef.current;
       setLoading(true);
       const { from, to } = monthRange(viewYear, viewMonth);
       void api
         .getTransactions(from, to, PAGE_SIZE, pageNum)
         .then((result) => {
-          if (!isMounted()) return;
+          if (!isMounted() || gen !== loadGenRef.current) return;
           if (pageNum === 1) {
             setTransactions(result.data);
           } else {
@@ -221,8 +220,7 @@ export function TransactionsPage({ onDataChanged }: TransactionsPageProps) {
           setTotal(result.total);
         })
         .finally(() => {
-          loadingRef.current = false;
-          if (isMounted()) setLoading(false);
+          if (gen === loadGenRef.current && isMounted()) setLoading(false);
         });
     },
     [viewYear, viewMonth, isMounted],
@@ -339,7 +337,6 @@ export function TransactionsPage({ onDataChanged }: TransactionsPageProps) {
       }
       closePanel();
       setPage(1);
-      loadingRef.current = false;
       loadTransactions(1);
       setRefDataToken((t) => t + 1);
       onDataChanged();
@@ -363,7 +360,6 @@ export function TransactionsPage({ onDataChanged }: TransactionsPageProps) {
       await api.deleteTransaction(selected.id);
       closePanel();
       setPage(1);
-      loadingRef.current = false;
       loadTransactions(1);
       setRefDataToken((t) => t + 1);
       onDataChanged();

@@ -111,9 +111,9 @@ export function AnalyticsPage({ analyticsRefreshToken }: AnalyticsPageProps) {
       const curYear = now.getFullYear();
       const curMonth = now.getMonth() + 1;
 
-      // 12 months back for net worth
-      const from = new Date(curYear, curMonth - 13, 1);
-      const to = new Date(curYear, curMonth, 0);
+      // 12 months back for net worth (UTC to avoid timezone date shift)
+      const from = new Date(Date.UTC(curYear, curMonth - 13, 1));
+      const to = new Date(Date.UTC(curYear, curMonth, 1) - 1);
 
       // Previous month
       const prevDate = new Date(curYear, curMonth - 2, 1);

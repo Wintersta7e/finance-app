@@ -16,8 +16,8 @@ export class AnalyticsService {
   constructor(private prisma: PrismaService) {}
 
   async getMonthSummary(year: number, month: number): Promise<MonthSummaryDto> {
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+    const startDate = new Date(Date.UTC(year, month - 1, 1));
+    const endDate = new Date(Date.UTC(year, month, 1) - 1);
 
     const transactions = await this.prisma.transaction.findMany({
       where: {
@@ -62,8 +62,8 @@ export class AnalyticsService {
   }
 
   async getCategoryBreakdown(year: number, month: number): Promise<CategoryBreakdownDto[]> {
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+    const startDate = new Date(Date.UTC(year, month - 1, 1));
+    const endDate = new Date(Date.UTC(year, month, 1) - 1);
 
     const transactions = await this.prisma.transaction.findMany({
       where: {
@@ -194,8 +194,8 @@ export class AnalyticsService {
   }
 
   async getBudgetVsActual(year: number, month: number): Promise<BudgetVsActualDto[]> {
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+    const startDate = new Date(Date.UTC(year, month - 1, 1));
+    const endDate = new Date(Date.UTC(year, month, 1) - 1);
 
     // Get transactions for the month (expenses only)
     const transactions = await this.prisma.transaction.findMany({
@@ -242,9 +242,9 @@ export class AnalyticsService {
     }
 
     // Build result: only include categories that have budgets
-    return budgets.map((budget: any) => ({
+    return budgets.map((budget) => ({
       categoryId: budget.categoryId,
-      categoryName: budget.category.name,
+      categoryName: budget.category?.name ?? 'Unknown',
       budgeted: this.toNumber(budget.amount),
       actual: spendingByCategory.get(budget.categoryId) || 0,
     }));
@@ -253,8 +253,8 @@ export class AnalyticsService {
   async getRecurringCostSummary(): Promise<RecurringCostSummaryDto> {
     // Use month boundaries like Java implementation
     const today = new Date();
-    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-    const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
+    const monthStart = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
+    const monthEnd = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + 1, 1) - 1);
 
     // Get active EXPENSE recurring rules for current month
     // Active if: startDate <= monthEnd AND (endDate is null OR endDate >= monthStart)
@@ -297,14 +297,13 @@ export class AnalyticsService {
 
   async calculateBalanceUpTo(date: Date): Promise<number> {
     // Get sum of all initial balances (non-deleted accounts)
-    const accounts = await this.prisma.account.findMany({
+    const accountAgg = await this.prisma.account.aggregate({
       where: { deletedAt: null },
+      _sum: { initialBalance: true },
     });
-
-    let initialTotal = 0;
-    for (const account of accounts) {
-      initialTotal += this.toNumber(account.initialBalance);
-    }
+    const initialTotal = accountAgg._sum.initialBalance
+      ? this.toNumber(accountAgg._sum.initialBalance)
+      : 0;
 
     // Get sum of all non-transfer transactions up to date
     const result = await this.prisma.transaction.aggregate({

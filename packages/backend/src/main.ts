@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { json } from 'express';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/http-exception.filter';
 import { DecimalSerializerInterceptor } from './common/interceptors/decimal-serializer.interceptor';
@@ -13,6 +14,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.setGlobalPrefix('api');
+  app.use('/api/import', json({ limit: '52mb' }));
   app.enableCors({
     origin: process.env.NODE_ENV === 'production'
       ? ['null']  // Electron file:// sends Origin: null
@@ -59,9 +61,9 @@ async function bootstrap() {
   }
 
   const port = process.env.PORT || 8080;
-  await app.listen(port);
+  await app.listen(port, '127.0.0.1');
 
-  console.log(`Backend running on http://localhost:${port}`);
+  console.log(`Backend running on http://127.0.0.1:${port}`);
 
   if (process.send) {
     process.send('ready');

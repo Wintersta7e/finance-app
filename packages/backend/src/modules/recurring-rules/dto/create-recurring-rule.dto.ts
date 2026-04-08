@@ -5,6 +5,7 @@ import {
   IsDate,
   IsIn,
   IsBoolean,
+  MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -41,6 +42,7 @@ export class CreateRecurringRuleDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   note?: string;
 
   @IsNumber()

@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsOptional, IsDate, IsIn } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsDate, IsIn, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export const TRANSACTION_TYPES = [
@@ -35,6 +35,7 @@ export class CreateTransactionDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   notes?: string;
 
   @IsOptional()

@@ -1,7 +1,8 @@
-import { IsString, IsNumber, IsBoolean, IsOptional, IsIn } from 'class-validator';
+import { IsString, IsNumber, IsBoolean, IsOptional, IsIn, MaxLength } from 'class-validator';
 
 export class CreateAccountDto {
   @IsString()
+  @MaxLength(255)
   name!: string;
 
   @IsOptional()

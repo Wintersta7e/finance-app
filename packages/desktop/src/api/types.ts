@@ -25,6 +25,7 @@ export interface Transaction {
   payeeId: number | null;
   notes: string | null;
   recurringRuleId: number | null;
+  tags?: Array<{ tagId: number; tag?: Tag }>;
 }
 
 export interface RecurringRule {

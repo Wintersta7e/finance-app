@@ -150,18 +150,18 @@ export function DashboardPage({ analyticsRefreshToken, onDataChanged, onNavigate
 
     try {
       const now = new Date();
-      const year = now.getFullYear();
-      const month = now.getMonth() + 1;
+      const year = now.getUTCFullYear();
+      const month = now.getUTCMonth() + 1;
 
       // Build 6 months of history requests
       const historyRequests: Promise<MonthSummary>[] = [];
       for (let i = MONTHS_BACK - 1; i >= 0; i--) {
-        const d = new Date(year, month - 1 - i, 1);
-        historyRequests.push(api.getMonthSummary(d.getFullYear(), d.getMonth() + 1));
+        const d = new Date(Date.UTC(year, month - 1 - i, 1));
+        historyRequests.push(api.getMonthSummary(d.getUTCFullYear(), d.getUTCMonth() + 1));
       }
 
       // Transaction date range: beginning of month to now
-      const monthStart = isoDate(new Date(year, month - 1, 1));
+      const monthStart = isoDate(new Date(Date.UTC(year, month - 1, 1)));
       const today = isoDate(now);
 
       // Fetch everything in parallel
@@ -172,7 +172,7 @@ export function DashboardPage({ analyticsRefreshToken, onDataChanged, onNavigate
           api.getBudgetVsActual(year, month),
           api.getTransactions(monthStart, today, RECENT_TX_LIMIT, 1),
           api.getNetWorthTrend(
-            isoDate(new Date(year, month - 1, 1)),
+            isoDate(new Date(Date.UTC(year, month - 1, 1))),
             today,
           ),
           ...historyRequests,

@@ -82,10 +82,10 @@ export function BudgetsPage() {
   const [isCreating, setIsCreating] = useState(false);
 
   const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1;
-  const dayOfMonth = now.getDate();
-  const daysInMonth = new Date(year, month, 0).getDate();
+  const year = now.getUTCFullYear();
+  const month = now.getUTCMonth() + 1;
+  const dayOfMonth = now.getUTCDate();
+  const daysInMonth = new Date(Date.UTC(year, month, 1) - 1).getUTCDate();
 
   /* ── Lookups ──────────────────────────────────────── */
   const categoryMap = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);

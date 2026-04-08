@@ -55,12 +55,11 @@ export class RecurringAutoPostService {
       return { processed: 0, transactions: [] };
     }
 
-    const transactions: Transaction[] = [];
+    // Process all rules in a single transaction for atomicity and performance
+    const transactions = await this.prisma.$transaction(async (tx) => {
+      const results: Transaction[] = [];
 
-    // Process each rule
-    for (const rule of rules) {
-      const transaction = await this.prisma.$transaction(async (tx: any) => {
-        // Create transaction from the rule
+      for (const rule of rules) {
         const newTransaction = await tx.transaction.create({
           data: {
             date: rule.nextOccurrence,
@@ -74,24 +73,22 @@ export class RecurringAutoPostService {
           },
         });
 
-        // Calculate new nextOccurrence (first date after today)
         const newNextOccurrence = this.scheduleService.calculateNextOccurrence(
           rule.startDate,
           rule.period,
           referenceDate,
         );
 
-        // Update the rule's nextOccurrence
         await tx.recurringRule.update({
           where: { id: rule.id },
           data: { nextOccurrence: newNextOccurrence },
         });
 
-        return newTransaction;
-      });
+        results.push(newTransaction);
+      }
 
-      transactions.push(transaction);
-    }
+      return results;
+    });
 
     return {
       processed: transactions.length,

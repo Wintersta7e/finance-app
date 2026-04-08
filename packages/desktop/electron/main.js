@@ -312,7 +312,7 @@ async function startBackend() {
       resolve();
     }, BACKEND_READY_TIMEOUT_MS);
 
-    backendProc.on('message', (msg) => {
+    backendProc.once('message', (msg) => {
       if (msg === 'ready') {
         if (settled) return;
         settled = true;

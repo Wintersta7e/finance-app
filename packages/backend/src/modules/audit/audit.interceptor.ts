@@ -3,6 +3,7 @@ import {
   NestInterceptor,
   ExecutionContext,
   CallHandler,
+  Logger,
 } from '@nestjs/common';
 import { Observable, tap } from 'rxjs';
 import { AuditService } from './audit.service';
@@ -29,6 +30,8 @@ export function extractEntityType(controllerName: string): string {
 
 @Injectable()
 export class AuditInterceptor implements NestInterceptor {
+  private readonly logger = new Logger(AuditInterceptor.name);
+
   constructor(private readonly auditService: AuditService) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
@@ -57,8 +60,8 @@ export class AuditInterceptor implements NestInterceptor {
         if (resolvedId != null && !isNaN(resolvedId)) {
           this.auditService
             .log(entityType, resolvedId, action)
-            .catch(() => {
-              // Swallow audit logging errors so they don't break the request
+            .catch((err: Error) => {
+              this.logger.warn(`Audit log failed for ${entityType}#${resolvedId}: ${err.message}`);
             });
         }
       }),

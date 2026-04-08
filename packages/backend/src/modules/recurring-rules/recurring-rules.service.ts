@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RecurringScheduleService } from './recurring-schedule.service';
 import { CreateRecurringRuleDto } from './dto/create-recurring-rule.dto';
@@ -56,7 +57,7 @@ export class RecurringRulesService {
     const startDateChanged = dto.startDate !== undefined;
     const periodChanged = dto.period !== undefined;
 
-    const data: any = { ...dto };
+    const data: Prisma.RecurringRuleUpdateInput = { ...dto };
 
     if (startDateChanged || periodChanged) {
       const startDate = dto.startDate ?? existing.startDate;
@@ -77,6 +78,10 @@ export class RecurringRulesService {
 
   async generateNext(id: number) {
     const rule = await this.findOne(id);
+
+    if (!rule.nextOccurrence) {
+      throw new BadRequestException('Rule has no next occurrence — it may have expired');
+    }
 
     return this.prisma.$transaction(async (tx) => {
       // Create a transaction from the rule

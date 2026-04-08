@@ -60,7 +60,7 @@ export class TagsService {
     await this.findOne(id);
 
     const transactionTagCount = await this.prisma.transactionTag.count({
-      where: { tagId: id },
+      where: { tagId: id, transaction: { deletedAt: null } },
     });
     if (transactionTagCount > 0) {
       throw new EntityInUseException('tag', 'transactions');

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RecurringScheduleService } from './recurring-schedule.service';
 
@@ -10,11 +10,24 @@ export interface AutoPostResult {
 }
 
 @Injectable()
-export class RecurringAutoPostService {
+export class RecurringAutoPostService implements OnModuleInit {
+  private readonly logger = new Logger(RecurringAutoPostService.name);
+
   constructor(
     private prisma: PrismaService,
     private scheduleService: RecurringScheduleService,
   ) {}
+
+  async onModuleInit() {
+    try {
+      const result = await this.processAutoPostRules();
+      if (result.processed > 0) {
+        this.logger.log(`Auto-posted ${result.processed} recurring transaction(s) at startup`);
+      }
+    } catch (err) {
+      this.logger.error('Failed to process auto-post rules at startup', (err as Error).message);
+    }
+  }
 
   /**
    * Process all recurring rules that are due for auto-posting.

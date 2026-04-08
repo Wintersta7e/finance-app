@@ -4,12 +4,19 @@
 #
 # When running from WSL targeting Windows, uses cmd.exe for npm operations
 # so native modules (better-sqlite3) get the correct platform binaries.
+#
+# After installing, rebuilds better-sqlite3 for Electron's Node version
+# since the forked backend runs under Electron's bundled Node.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BACKEND_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 ROOT_DIR="$(cd "$BACKEND_DIR/../.." && pwd)"
 STAGING_DIR="$BACKEND_DIR/staging"
+
+# Read Electron version from desktop package.json
+ELECTRON_VERSION=$(node -e "console.log(require('$ROOT_DIR/node_modules/electron/package.json').version)")
+echo "Electron version: $ELECTRON_VERSION"
 
 # Detect if we're in WSL targeting a Windows mount
 is_wsl_windows_mount() {
@@ -35,18 +42,24 @@ mkdir -p "$STAGING_DIR"
 cp "$BACKEND_DIR/package.json" "$STAGING_DIR/"
 
 # 3. Install production deps (includes @prisma/client, better-sqlite3, adapter)
-# No need to run prisma generate — the generated client is compiled into dist/
 if is_wsl_windows_mount; then
 	WIN_STAGING="$(to_win_path "$STAGING_DIR")"
 	echo "WSL detected on Windows mount — using cmd.exe for npm install"
 	echo "Windows staging path: $WIN_STAGING"
 
-	# Install production deps (Windows binaries for better-sqlite3)
 	cmd.exe /c "cd /d $WIN_STAGING && npm install --omit=dev" 2>&1
+
+	# Rebuild better-sqlite3 for Electron's Node version (Windows target)
+	echo "Rebuilding better-sqlite3 for Electron $ELECTRON_VERSION..."
+	cmd.exe /c "cd /d $WIN_STAGING && npx @electron/rebuild --version $ELECTRON_VERSION --module-dir . --only better-sqlite3" 2>&1
 else
 	echo "Native environment — using npm directly"
 	cd "$STAGING_DIR"
 	npm install --omit=dev 2>&1
+
+	# Rebuild better-sqlite3 for Electron's Node version
+	echo "Rebuilding better-sqlite3 for Electron $ELECTRON_VERSION..."
+	npx @electron/rebuild --version "$ELECTRON_VERSION" --module-dir . --only better-sqlite3 2>&1
 fi
 
 # 4. Copy standalone node_modules back
@@ -59,5 +72,5 @@ rm -rf "$STAGING_DIR"
 
 echo "=== Production backend ready ==="
 echo "  dist/              - compiled JavaScript (includes generated Prisma client)"
-echo "  node_modules_prod/ - production dependencies (better-sqlite3, @prisma/client)"
+echo "  node_modules_prod/ - production dependencies (better-sqlite3 rebuilt for Electron)"
 echo "  prisma/            - schema and migrations"

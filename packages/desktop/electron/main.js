@@ -151,7 +151,7 @@ function splitSqlStatements(sql) {
   return statements;
 }
 
-async function runMigrations(dbUrl) {
+function runMigrations(dbUrl) {
   const backendRoot = getBackendRoot();
   const migrationsDir = path.join(backendRoot, 'prisma', 'migrations');
 
@@ -160,26 +160,17 @@ async function runMigrations(dbUrl) {
     return;
   }
 
-  // Prisma 7: load PrismaClient from generated output + better-sqlite3 adapter
-  const generatedPath = path.join(backendRoot, 'dist', 'src', 'generated', 'prisma', 'client');
-  const adapterPath = path.join(backendRoot, 'node_modules', '@prisma', 'adapter-better-sqlite3');
-  let PrismaClient, PrismaBetterSqlite3;
-  try {
-    PrismaClient = require(generatedPath).PrismaClient;
-    PrismaBetterSqlite3 = require(adapterPath).PrismaBetterSqlite3;
-  } catch (err) {
-    // CR-05: Let the error propagate so startBackend rejects
-    throw new Error(`Failed to load PrismaClient for migrations: ${err.message}`);
-  }
-
-  const adapter = new PrismaBetterSqlite3({ url: dbUrl });
-  const prisma = new PrismaClient({ adapter });
+  // Use better-sqlite3 directly for migrations. electron-rebuild compiles it
+  // for Electron's Node version, avoiding NODE_MODULE_VERSION mismatch with
+  // node_modules_prod (which targets system Node for the forked backend).
+  const Database = require('better-sqlite3');
+  const dbPath = dbUrl.replace(/^file:/, '');
+  const db = new Database(dbPath);
 
   try {
-    await prisma.$connect();
+    db.pragma('journal_mode = WAL');
 
-    // Create Prisma migrations tracking table (compatible with prisma migrate deploy)
-    await prisma.$executeRawUnsafe(`
+    db.prepare(`
       CREATE TABLE IF NOT EXISTS "_prisma_migrations" (
         "id" TEXT PRIMARY KEY NOT NULL,
         "checksum" TEXT NOT NULL,
@@ -190,15 +181,13 @@ async function runMigrations(dbUrl) {
         "started_at" DATETIME NOT NULL DEFAULT current_timestamp,
         "applied_steps_count" INTEGER NOT NULL DEFAULT 0
       )
-    `);
+    `).run();
 
-    // Get already-applied migrations
-    const applied = await prisma.$queryRawUnsafe(
+    const applied = db.prepare(
       'SELECT "migration_name" FROM "_prisma_migrations" WHERE "rolled_back_at" IS NULL',
-    );
+    ).all();
     const appliedNames = new Set(applied.map((r) => r.migration_name));
 
-    // Read migration directories in order
     const migrationDirs = fs
       .readdirSync(migrationsDir, { withFileTypes: true })
       .filter((d) => d.isDirectory())
@@ -208,7 +197,6 @@ async function runMigrations(dbUrl) {
     for (const dirName of migrationDirs) {
       if (appliedNames.has(dirName)) continue;
 
-      // CR-09: Validate migration directory name to prevent SQL injection
       if (!MIGRATION_DIR_RE.test(dirName)) {
         log('warn', 'Skipping migration with suspicious directory name:', dirName);
         continue;
@@ -220,33 +208,26 @@ async function runMigrations(dbUrl) {
       log('info', 'Applying migration:', dirName);
       const sql = fs.readFileSync(sqlPath, 'utf-8');
       const checksum = crypto.createHash('sha256').update(sql).digest('hex');
-
-      // Quote-aware SQL statement splitter — handles semicolons inside
-      // single/double-quoted strings and '' / "" escape sequences.
       const statements = splitSqlStatements(sql);
 
-      for (const stmt of statements) {
-        await prisma.$executeRawUnsafe(stmt);
-      }
+      // Apply migration atomically
+      const applyMigration = db.transaction(() => {
+        for (const stmt of statements) {
+          db.prepare(stmt).run();
+        }
+        db.prepare(
+          `INSERT INTO "_prisma_migrations" ("id", "checksum", "finished_at", "migration_name", "applied_steps_count")
+           VALUES (?, ?, datetime('now'), ?, ?)`,
+        ).run(crypto.randomUUID(), checksum, dirName, statements.length);
+      });
 
-      // CR-09: Use parameterized query to prevent SQL injection via dirName/checksum
-      const migrationId = crypto.randomUUID();
-      await prisma.$executeRawUnsafe(
-        `INSERT INTO "_prisma_migrations" ("id", "checksum", "finished_at", "migration_name", "applied_steps_count")
-         VALUES (?, ?, datetime('now'), ?, ?)`,
-        migrationId,
-        checksum,
-        dirName,
-        statements.length,
-      );
-
+      applyMigration();
       log('info', 'Migration applied:', dirName);
     }
 
     log('info', 'All migrations up to date');
   } finally {
-    // CR-05: No catch — errors propagate to startBackend which shows a dialog
-    await prisma.$disconnect();
+    db.close();
   }
 }
 
@@ -274,8 +255,8 @@ async function startBackend() {
   log('info', 'Database path:', dbPath);
   log('info', 'Entry point exists:', fs.existsSync(entryPoint));
 
-  // CR-05: Let migration errors propagate — caller shows error dialog
-  await runMigrations(dbUrl);
+  // Let migration errors propagate — caller shows error dialog
+  runMigrations(dbUrl);
 
   return new Promise((resolve, reject) => {
     // CR-22: Prevent double-settle (both resolve and reject firing)

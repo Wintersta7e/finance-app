@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react';
+import { type ReactNode, useMemo } from 'react';
 
 interface DateGroupedListProps<T> {
   items: T[];
@@ -20,17 +20,20 @@ function formatDateGroup(dateStr: string): string {
 }
 
 export function DateGroupedList<T>({ items, getDate, renderItem, keyExtractor }: DateGroupedListProps<T>) {
-  const groups = new Map<string, T[]>();
-  for (const item of items) {
-    const dateKey = getDate(item).slice(0, 10); // YYYY-MM-DD
-    const list = groups.get(dateKey) ?? [];
-    list.push(item);
-    groups.set(dateKey, list);
-  }
+  const groupEntries = useMemo(() => {
+    const groups = new Map<string, T[]>();
+    for (const item of items) {
+      const dateKey = getDate(item).slice(0, 10);
+      const list = groups.get(dateKey) ?? [];
+      list.push(item);
+      groups.set(dateKey, list);
+    }
+    return [...groups.entries()];
+  }, [items, getDate]);
 
   return (
     <div className="space-y-4">
-      {[...groups.entries()].map(([dateKey, groupItems]) => (
+      {groupEntries.map(([dateKey, groupItems]) => (
         <div key={dateKey}>
           <div className="text-[10px] uppercase tracking-[2px] text-neon-text-faint mb-2">
             {formatDateGroup(dateKey)}

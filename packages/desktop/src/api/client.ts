@@ -84,7 +84,8 @@ export const api = {
 
   async getTransactions(from: string, to: string, limit = 100, page = 1): Promise<{ data: Transaction[]; total: number }> {
     const params = new URLSearchParams({ startDate: from, endDate: to, limit: String(limit), page: String(page) });
-    return request<{ data: Transaction[]; total: number }>(`/transactions?${params.toString()}`);
+    const result = await request<{ data: Transaction[]; meta: { total: number } }>(`/transactions?${params.toString()}`);
+    return { data: result.data, total: result.meta.total };
   },
 
   createTransaction(payload: Omit<Transaction, 'id'>): Promise<Transaction> {

@@ -82,15 +82,15 @@ export function AccountsPage() {
 
   const handleSubmit = async () => {
     if (!form || !form.name.trim()) return;
+    const balance = parseFloat(form.initialBalance.replace(',', '.'));
+    if (Number.isNaN(balance)) {
+      setError('Enter a valid balance');
+      return;
+    }
     setError(null);
     setSaving(true);
     try {
-      const balance = parseFloat(form.initialBalance.replace(',', '.'));
-      if (Number.isNaN(balance)) {
-        setError('Enter a valid balance');
-        return;
-      }
-      const payload = { name: form.name.trim(), type: form.type, initialBalance: balance };
+      const payload = { name: form.name.trim(), type: form.type.toUpperCase(), initialBalance: balance };
       if (selected) {
         await api.updateAccount(selected.id, payload);
       } else {

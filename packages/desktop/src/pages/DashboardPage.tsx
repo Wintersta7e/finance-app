@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { api } from '../api/client';
 import type {
@@ -284,6 +284,10 @@ export function DashboardPage({ analyticsRefreshToken, onDataChanged, onNavigate
   const spendHistory = data ? data.history.map((h) => h.fixedCosts + h.variableExpenses) : [];
   const totalSpent = data ? data.summary.fixedCosts + data.summary.variableExpenses : 0;
   const breakdownTotal = data ? data.breakdown.reduce((s, c) => s + c.amount, 0) : 0;
+  const sortedBreakdown = useMemo(
+    () => data?.breakdown.filter((c) => c.amount > 0).sort((a, b) => b.amount - a.amount) ?? [],
+    [data?.breakdown],
+  );
 
   /* ── render ──────────────────────────────────────────────────────── */
 
@@ -420,10 +424,7 @@ export function DashboardPage({ analyticsRefreshToken, onDataChanged, onNavigate
             Category Breakdown
           </div>
           <div className="flex h-5 overflow-hidden rounded-sm">
-            {data.breakdown
-              .filter((c) => c.amount > 0)
-              .sort((a, b) => b.amount - a.amount)
-              .map((cat, i) => {
+            {sortedBreakdown.map((cat, i) => {
                 const pct = breakdownTotal > 0 ? (cat.amount / breakdownTotal) * 100 : 0;
                 const color = CATEGORY_COLORS[i % CATEGORY_COLORS.length];
                 return (
@@ -455,11 +456,7 @@ export function DashboardPage({ analyticsRefreshToken, onDataChanged, onNavigate
           </div>
           {/* Legend */}
           <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
-            {data.breakdown
-              .filter((c) => c.amount > 0)
-              .sort((a, b) => b.amount - a.amount)
-              .slice(0, 6)
-              .map((cat, i) => (
+            {sortedBreakdown.slice(0, 6).map((cat, i) => (
                 <div key={cat.categoryId} className="flex items-center gap-1.5">
                   <div
                     className="h-1.5 w-1.5 rounded-full"

@@ -41,7 +41,8 @@ export function CommandPalette({ open, onClose, onNavigate, onAction }: CommandP
     if (open) {
       setQuery('');
       setSelectedIndex(0);
-      setTimeout(() => inputRef.current?.focus(), 50);
+      const id = setTimeout(() => inputRef.current?.focus(), 50);
+      return () => clearTimeout(id);
     }
   }, [open]);
 

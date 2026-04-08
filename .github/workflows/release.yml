@@ -25,8 +25,21 @@ jobs:
         run: npx prisma generate
         working-directory: packages/backend
 
-      - name: Build backend
+      - name: Build backend TypeScript
         run: npm run build:backend
+
+      - name: Prepare production backend dependencies
+        shell: bash
+        run: |
+          cd packages/backend
+          rm -rf staging node_modules_prod
+          mkdir -p staging
+          cp package.json staging/
+          cd staging
+          npm install --omit=dev
+          cd ..
+          mv staging/node_modules node_modules_prod
+          rm -rf staging
 
       - name: Build frontend
         run: npm -w @finance/desktop run build

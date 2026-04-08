@@ -1,28 +1,59 @@
 # Changelog
 
-## [Unreleased]
+## [2.0.0] - 2026-04-08
 
 ### Added
-- ESLint coverage for backend (`eslint.config.mjs` with typescript-eslint recommended)
-- Root `npm run typecheck` script covering both packages
-- Root `npm run lint` script covering both packages
-- API client retry with exponential backoff for backend startup race condition
+- **Complete UI rewrite** — 13 pages rebuilt with Tailwind CSS 4 + Framer Motion "Neon Pulse" dark theme
+- New component library: SidePanel, CommandPalette, CommandStrip, SparkBars, SparkLine, OrbitalRing, GlowBar, MetricStrip, InsightBlock, DateGroupedList, Toast, DropdownMenu, EmptyState, PillChip, ErrorBoundary
+- App shell with SplashScreen, health gate, command strip sidebar router
+- Command Palette (`Ctrl+K`) for quick page/action navigation
+- Tags, Payees, Goals, Export/Import, Audit, Settings pages
+- Database indexes on Transaction (date, accountId, categoryId) and AuditLog (timestamp, entityType)
+- Backend README with module table and Prisma 7 guide
+- CI workflow (typecheck, lint, test, build), Release workflow (portable EXE on `v*` tags)
+- Dependabot for weekly npm + GitHub Actions updates
+- npm overrides for lodash, path-to-regexp, @hono/node-server vulnerability mitigation
 
 ### Changed
-- Backend TypeScript upgraded to full `strict: true` mode (was partial)
-- Frontend ESLint config renamed to `.mjs` (eliminates ESM re-parse warning)
-- Dev script now waits for backend health endpoint before opening Electron
-- Upgraded Prisma 5.22 to 6.19
-- Upgraded NestJS 11.1.13 to 11.1.14
-- Upgraded Electron 40.2 to 40.6, electron-builder 26.7 to 26.8
-- Upgraded globals 16.5 to 17.3, wait-on 8.0 to 9.0
-- Upgraded typescript-eslint, @types/node, @types/react, @vitejs/plugin-react
-- Removed unused @nestjs/cli and @nestjs/schematics (eliminated 120 packages)
-- Vulnerabilities reduced from 60 to 19 (all remaining are dev-only minimatch ReDoS)
+- **Prisma 6 → 7** — driver adapter pattern with `@prisma/adapter-better-sqlite3`, `prisma.config.ts`, generated client at `src/generated/prisma/`
+- **TypeScript 5 → 6** — removed deprecated `baseUrl`, explicit jest types in ts-jest config
+- **Electron 40 → 41** — Chromium 136, Node 24
+- **Vite 7 → 8** — Rolldown bundler (2x faster builds)
+- **ESLint 9 → 10**, @eslint/js 10, eslint-plugin-react-refresh 0.5
+- **@vitejs/plugin-react 5 → 6**
+- **cross-env 7 → 10**, @types/supertest 7, class-validator 0.15
+- Backend binds to `127.0.0.1` only (was `0.0.0.0`)
+- Import endpoint has 52MB server-side body size limit
+- All DTO string fields now have `@MaxLength()` validation
+- Goal color field validated with hex regex (matches tags pattern)
+- `calculateBalanceUpTo` uses `account.aggregate` instead of `findMany` + loop
+- Auto-post processes each recurring rule in its own `$transaction` (independent failure)
+- Audit interceptor logs failures at warn level instead of swallowing silently
+- HttpExceptionFilter joins validation message arrays into semicolon-separated string
+- Migration runner in `electron/main.js` uses Prisma 7 adapter pattern
+- `prepare-production.sh` simplified — no longer runs `prisma generate` (compiled to dist by tsc)
+- All READMEs updated for current stack
 
 ### Fixed
-- Button `disabled` prop was cosmetic only — now actually disables the HTML element
-- "Add rule" button clickable during loading (caused form to open with empty data)
+- **UTC date boundaries** — all analytics methods use `Date.UTC()` instead of local-time constructors; prevents month boundary misattribution for non-UTC users
+- **Pagination broken** — frontend expected `{ data, total }` but backend returned `{ data, meta: { total } }`; "Load more" button never appeared
+- **Transaction list race condition** — replaced `loadingRef` mutex with generation counter; prevents stale data overwriting fresh results after mutations
+- **Tag deletion blocked by soft-deleted transactions** — in-use check now filters `transaction.deletedAt: null`
+- **`RecurringRuleUpdateInput` crash** — changed to `UncheckedUpdateInput` for scalar FK field compatibility
+- **`useCategories` missing unmount guard** — added `useIsMounted()` consistent with all other hooks
+- **CommandPalette timer leak** — `setTimeout` now cleaned up on unmount
+- **AccountsPage type mismatch** — sends uppercase account type to match backend validation
+- **AccountsPage save button flicker** — validation moved before `setSaving(true)`
+- **Dashboard/Budgets UTC dates** — `getUTCFullYear()`/`getUTCMonth()` for API date params near midnight
+- **Electron IPC listener leak** — backend ready listener changed to `.once()`
+- **Frontend net-worth trend dates** — UTC construction for `from`/`to` parameters
+- Import validation extended to cover tags and payees arrays
+- Vulnerabilities reduced from 18 to 6 (all residual in dev/build transitive deps)
+
+### Removed
+- Old UI components: Layout, theme.ts, chart wrappers, Button, Card, Modal, FormField, Page, QuickTransactionForm
+- `baseUrl` from backend tsconfig (deprecated in TypeScript 6)
+- Platform-specific Prisma query engine binaries (replaced by WASM compiler + better-sqlite3)
 
 ## [1.1.0] - 2026-02-07
 

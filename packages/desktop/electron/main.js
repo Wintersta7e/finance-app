@@ -152,19 +152,20 @@ async function runMigrations(dbUrl) {
     return;
   }
 
-  const clientPath = path.join(backendRoot, 'node_modules', '@prisma', 'client');
-  let PrismaClient;
+  // Prisma 7: load PrismaClient from generated output + better-sqlite3 adapter
+  const generatedPath = path.join(backendRoot, 'dist', 'src', 'generated', 'prisma', 'client');
+  const adapterPath = path.join(backendRoot, 'node_modules', '@prisma', 'adapter-better-sqlite3');
+  let PrismaClient, PrismaBetterSqlite3;
   try {
-    PrismaClient = require(clientPath).PrismaClient;
+    PrismaClient = require(generatedPath).PrismaClient;
+    PrismaBetterSqlite3 = require(adapterPath).PrismaBetterSqlite3;
   } catch (err) {
     // CR-05: Let the error propagate so startBackend rejects
     throw new Error(`Failed to load PrismaClient for migrations: ${err.message}`);
   }
 
-  const prisma = new PrismaClient({
-    datasources: { db: { url: dbUrl } },
-    log: [],
-  });
+  const adapter = new PrismaBetterSqlite3({ url: dbUrl });
+  const prisma = new PrismaClient({ adapter });
 
   try {
     await prisma.$connect();

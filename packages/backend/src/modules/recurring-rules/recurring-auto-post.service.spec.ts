@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { RecurringAutoPostService } from './recurring-auto-post.service';
 import { RecurringScheduleService } from './recurring-schedule.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from '@prisma/client/runtime/client';
 
 describe('RecurringAutoPostService', () => {
   let service: RecurringAutoPostService;

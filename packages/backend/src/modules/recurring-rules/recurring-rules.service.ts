@@ -1,5 +1,5 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RecurringScheduleService } from './recurring-schedule.service';
 import { CreateRecurringRuleDto } from './dto/create-recurring-rule.dto';

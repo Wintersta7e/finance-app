@@ -1,5 +1,4 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
 export interface ExportData {
@@ -140,7 +139,7 @@ export class ExportService {
       throw new BadRequestException(`Invalid import mode: ${mode}. Must be 'replace' or 'merge'.`);
     }
 
-    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    return this.prisma.$transaction(async (tx) => {
       const summary: ImportSummary = {
         imported: {
           accounts: 0,

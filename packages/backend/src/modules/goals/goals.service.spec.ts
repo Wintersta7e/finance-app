@@ -5,7 +5,7 @@ import { EntityNotFoundException } from '../../common';
 import { CreateGoalDto } from './dto/create-goal.dto';
 import { UpdateGoalDto } from './dto/update-goal.dto';
 import { ContributeDto } from './dto/contribute.dto';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Decimal } from '@prisma/client/runtime/client';
 
 describe('GoalsService', () => {
   let service: GoalsService;

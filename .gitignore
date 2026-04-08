@@ -5,6 +5,7 @@ node_modules/
 dist/
 build/
 packages/backend/node_modules_prod/
+packages/backend/src/generated/
 coverage/
 
 # Logs

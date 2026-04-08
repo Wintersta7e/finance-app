@@ -32,14 +32,14 @@
     "rxjs": "^7.8.2"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.2",
+    "@eslint/js": "^10.0.1",
     "@faker-js/faker": "^10.2.0",
     "@nestjs/testing": "^11.1.13",
     "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.2.1",
     "@types/supertest": "^7.2.0",
-    "eslint": "^9.39.2",
+    "eslint": "^10.2.0",
     "jest": "^30.2.0",
     "prisma": "^6.19.2",
     "supertest": "^7.2.2",

@@ -53,6 +53,10 @@ model Transaction {
   payee      Payee?    @relation(fields: [payeeId], references: [id])
   payeeId    Int?
   tags       TransactionTag[]
+
+  @@index([date, deletedAt])
+  @@index([accountId, deletedAt])
+  @@index([categoryId, deletedAt])
 }
 
 model RecurringRule {
@@ -151,4 +155,7 @@ model AuditLog {
   action     String
   changes    String?
   timestamp  DateTime @default(now())
+
+  @@index([timestamp(sort: Desc)])
+  @@index([entityType, entityId])
 }

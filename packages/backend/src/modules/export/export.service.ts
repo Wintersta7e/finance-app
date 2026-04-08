@@ -167,11 +167,25 @@ export class ExportService {
         await tx.account.updateMany({ where: { deletedAt: null }, data: { deletedAt: now } });
       }
 
-      // Create ID mappings for replace mode
+      // Create ID mappings
       const accountIdMap = new Map<number, number>();
       const categoryIdMap = new Map<number, number>();
       const tagIdMap = new Map<number, number>();
       const payeeIdMap = new Map<number, number>();
+
+      // In merge mode, build sets of existing IDs for validation
+      const existingAccountIds = mode === 'merge'
+        ? new Set((await tx.account.findMany({ where: { deletedAt: null }, select: { id: true } })).map((a) => a.id))
+        : undefined;
+      const existingCategoryIds = mode === 'merge'
+        ? new Set((await tx.category.findMany({ where: { deletedAt: null }, select: { id: true } })).map((c) => c.id))
+        : undefined;
+      const existingTagIds = mode === 'merge'
+        ? new Set((await tx.tag.findMany({ where: { deletedAt: null }, select: { id: true } })).map((t) => t.id))
+        : undefined;
+      const existingPayeeIds = mode === 'merge'
+        ? new Set((await tx.payee.findMany({ where: { deletedAt: null }, select: { id: true } })).map((p) => p.id))
+        : undefined;
 
       // Import accounts
       for (const account of data.data.accounts || []) {
@@ -200,8 +214,15 @@ export class ExportService {
         summary.imported.categories++;
       }
 
-      // Import tags
+      // Import tags — use upsert in merge mode to handle unique name conflicts
       for (const tag of data.data.tags || []) {
+        if (mode === 'merge') {
+          const existing = await tx.tag.findFirst({ where: { name: tag.name, deletedAt: null } });
+          if (existing) {
+            tagIdMap.set(tag.id, existing.id);
+            continue;
+          }
+        }
         const created = await tx.tag.create({
           data: {
             name: tag.name,
@@ -212,8 +233,15 @@ export class ExportService {
         summary.imported.tags++;
       }
 
-      // Import payees
+      // Import payees — use upsert in merge mode to handle unique name conflicts
       for (const payee of data.data.payees || []) {
+        if (mode === 'merge') {
+          const existing = await tx.payee.findFirst({ where: { name: payee.name, deletedAt: null } });
+          if (existing) {
+            payeeIdMap.set(payee.id, existing.id);
+            continue;
+          }
+        }
         const created = await tx.payee.create({
           data: {
             name: payee.name,
@@ -226,12 +254,12 @@ export class ExportService {
 
       // Import transactions with mapped IDs
       for (const transaction of data.data.transactions || []) {
-        const accountId = this.resolveId(accountIdMap, transaction.accountId, 'account', mode);
+        const accountId = this.resolveId(accountIdMap, transaction.accountId, 'account', mode, existingAccountIds);
         const categoryId = transaction.categoryId
-          ? this.resolveId(categoryIdMap, transaction.categoryId, 'category', mode)
+          ? this.resolveId(categoryIdMap, transaction.categoryId, 'category', mode, existingCategoryIds)
           : null;
         const payeeId = transaction.payeeId
-          ? this.resolveId(payeeIdMap, transaction.payeeId, 'payee', mode)
+          ? this.resolveId(payeeIdMap, transaction.payeeId, 'payee', mode, existingPayeeIds)
           : null;
 
         const createdTx = await tx.transaction.create({
@@ -249,9 +277,8 @@ export class ExportService {
         // Restore tag associations from exported data
         if (Array.isArray(transaction.tags)) {
           for (const tt of transaction.tags) {
-            const mappedTagId = mode === 'replace'
-              ? tagIdMap.get(tt.tagId)
-              : (tagIdMap.get(tt.tagId) ?? tt.tagId);
+            const mappedTagId = tagIdMap.get(tt.tagId)
+              ?? (mode === 'merge' && existingTagIds?.has(tt.tagId) ? tt.tagId : undefined);
             if (mappedTagId !== undefined) {
               await tx.transactionTag.create({
                 data: {
@@ -268,12 +295,12 @@ export class ExportService {
 
       // Import recurring rules with mapped IDs
       for (const rule of data.data.recurringRules || []) {
-        const accountId = this.resolveId(accountIdMap, rule.accountId, 'account', mode);
+        const accountId = this.resolveId(accountIdMap, rule.accountId, 'account', mode, existingAccountIds);
         const categoryId = rule.categoryId
-          ? this.resolveId(categoryIdMap, rule.categoryId, 'category', mode)
+          ? this.resolveId(categoryIdMap, rule.categoryId, 'category', mode, existingCategoryIds)
           : null;
         const payeeId = rule.payeeId
-          ? this.resolveId(payeeIdMap, rule.payeeId, 'payee', mode)
+          ? this.resolveId(payeeIdMap, rule.payeeId, 'payee', mode, existingPayeeIds)
           : null;
 
         await tx.recurringRule.create({
@@ -296,7 +323,7 @@ export class ExportService {
 
       // Import budgets with mapped IDs
       for (const budget of data.data.budgets || []) {
-        const categoryId = this.resolveId(categoryIdMap, budget.categoryId, 'category', mode);
+        const categoryId = this.resolveId(categoryIdMap, budget.categoryId, 'category', mode, existingCategoryIds);
 
         await tx.budget.create({
           data: {
@@ -349,13 +376,14 @@ export class ExportService {
   /**
    * Resolve an old ID to a new ID using the mapping.
    * In 'replace' mode, throws if the ID is not found in the map.
-   * In 'merge' mode, falls back to the original ID.
+   * In 'merge' mode, throws if the ID is neither in the map nor in existingIds.
    */
   private resolveId(
     idMap: Map<number, number>,
     oldId: number,
     entityName: string,
     mode: ImportMode,
+    existingIds?: Set<number>,
   ): number {
     const mapped = idMap.get(oldId);
     if (mapped !== undefined) {
@@ -364,6 +392,12 @@ export class ExportService {
     if (mode === 'replace') {
       throw new BadRequestException(
         `Import failed: ${entityName} with original ID ${oldId} was not found in the import data`,
+      );
+    }
+    // Merge mode: verify the original ID exists in the current database
+    if (existingIds && !existingIds.has(oldId)) {
+      throw new BadRequestException(
+        `Import failed: ${entityName} with ID ${oldId} does not exist in the current database`,
       );
     }
     return oldId;

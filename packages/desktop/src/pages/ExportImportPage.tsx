@@ -39,7 +39,7 @@ export function ExportImportPage() {
   const [exportingJson, setExportingJson] = useState(false);
   const [exportingCsv, setExportingCsv] = useState(false);
   const [importing, setImporting] = useState(false);
-  const [importMode, setImportMode] = useState<'replace' | 'merge'>('merge');
+  const [importMode, setImportMode] = useState<'replace' | 'merge'>('replace');
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);

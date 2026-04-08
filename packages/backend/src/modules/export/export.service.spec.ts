@@ -12,8 +12,8 @@ describe('ExportService', () => {
     transaction: { findMany: jest.fn(), updateMany: jest.fn(), createMany: jest.fn(), create: jest.fn() },
     recurringRule: { findMany: jest.fn(), updateMany: jest.fn(), createMany: jest.fn(), create: jest.fn() },
     budget: { findMany: jest.fn(), updateMany: jest.fn(), createMany: jest.fn(), create: jest.fn() },
-    tag: { findMany: jest.fn(), updateMany: jest.fn(), createMany: jest.fn(), create: jest.fn() },
-    payee: { findMany: jest.fn(), updateMany: jest.fn(), createMany: jest.fn(), create: jest.fn() },
+    tag: { findMany: jest.fn(), findFirst: jest.fn(), updateMany: jest.fn(), createMany: jest.fn(), create: jest.fn() },
+    payee: { findMany: jest.fn(), findFirst: jest.fn(), updateMany: jest.fn(), createMany: jest.fn(), create: jest.fn() },
     savingsGoal: { findMany: jest.fn(), updateMany: jest.fn(), createMany: jest.fn(), create: jest.fn() },
     appSettings: { findUnique: jest.fn(), upsert: jest.fn() },
     transactionTag: { deleteMany: jest.fn(), createMany: jest.fn() },
@@ -360,6 +360,11 @@ describe('ExportService', () => {
         },
       };
 
+      // Mock existing IDs for merge mode validation
+      mockPrisma.account.findMany.mockResolvedValue([]);
+      mockPrisma.category.findMany.mockResolvedValue([]);
+      mockPrisma.tag.findMany.mockResolvedValue([]);
+      mockPrisma.payee.findMany.mockResolvedValue([]);
       mockPrisma.account.create.mockResolvedValue({ id: 10 });
 
       const result = await service.importJson(importData, 'merge');

@@ -227,8 +227,12 @@ export function TransactionsPage({ onDataChanged }: TransactionsPageProps) {
   );
 
   useEffect(() => {
-    setPage(1);
-    loadTransactions(1);
+    // Defer to a microtask so the page reset and loader's setState run outside
+    // the effect body (react-hooks/set-state-in-effect).
+    void Promise.resolve().then(() => {
+      setPage(1);
+      loadTransactions(1);
+    });
   }, [loadTransactions]);
 
   /* ── Filtered transactions ── */

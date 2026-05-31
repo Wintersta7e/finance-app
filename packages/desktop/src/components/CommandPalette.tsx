@@ -35,15 +35,31 @@ const PAGE_ITEMS: { id: PageId; label: string }[] = [
 export function CommandPalette({ open, onClose, onNavigate, onAction }: CommandPaletteProps) {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [wasOpen, setWasOpen] = useState(open);
+  const [prevQuery, setPrevQuery] = useState(query);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
+  // Reset palette state when it transitions to open — adjust state during
+  // render instead of in an effect (react-hooks/set-state-in-effect).
+  if (open !== wasOpen) {
+    setWasOpen(open);
     if (open) {
       setQuery('');
       setSelectedIndex(0);
-      const id = setTimeout(() => inputRef.current?.focus(), 50);
-      return () => clearTimeout(id);
     }
+  }
+
+  // Highlight the first result whenever the query changes.
+  if (query !== prevQuery) {
+    setPrevQuery(query);
+    setSelectedIndex(0);
+  }
+
+  // Focus the search input shortly after the palette opens.
+  useEffect(() => {
+    if (!open) return;
+    const id = setTimeout(() => inputRef.current?.focus(), 50);
+    return () => clearTimeout(id);
   }, [open]);
 
   const items = useMemo<PaletteItem[]>(() => {
@@ -79,10 +95,6 @@ export function CommandPalette({ open, onClose, onNavigate, onAction }: CommandP
     const q = query.toLowerCase();
     return all.filter((item) => item.label.toLowerCase().includes(q));
   }, [query, onNavigate, onClose, onAction]);
-
-  useEffect(() => {
-    setSelectedIndex(0);
-  }, [query]);
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'ArrowDown') {

@@ -25,7 +25,9 @@ export function useCategories() {
   }, [isMounted]);
 
   useEffect(() => {
-    void reload();
+    // Defer to a microtask so the loader's setState runs outside the effect
+    // body (react-hooks/set-state-in-effect).
+    void Promise.resolve().then(() => reload());
   }, [reload]);
 
   const createCategoryInline = useCallback(async (payload: Omit<Category, 'id'>) => {

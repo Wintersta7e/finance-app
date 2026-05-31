@@ -139,7 +139,9 @@ export function AuditPage() {
   }, [limit, isMounted]);
 
   useEffect(() => {
-    void load();
+    // Defer to a microtask so the loader's setState runs outside the effect
+    // body (react-hooks/set-state-in-effect).
+    void Promise.resolve().then(() => load());
   }, [load]);
 
   // Derive entity types from data

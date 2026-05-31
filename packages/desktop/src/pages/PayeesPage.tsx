@@ -33,7 +33,11 @@ export function PayeesPage() {
     }
   }, [isMounted]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    // Defer to a microtask so the loader's setState runs outside the effect
+    // body (react-hooks/set-state-in-effect).
+    void Promise.resolve().then(() => load());
+  }, [load]);
 
   const openCreate = () => {
     setSelected(null);

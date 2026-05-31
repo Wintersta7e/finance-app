@@ -15,8 +15,8 @@
     "typecheck": "npm -w @finance/backend run typecheck && npm -w @finance/desktop run typecheck"
   },
   "devDependencies": {
-    "concurrently": "^9.0.0",
-    "wait-on": "^9.0.4"
+    "concurrently": "^10.0.0",
+    "wait-on": "^9.0.10"
   },
   "overrides": {
     "lodash": "4.18.1",

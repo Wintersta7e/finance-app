@@ -20,10 +20,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@nestjs/common": "^11.1.24",
-    "@nestjs/core": "^11.1.24",
+    "@nestjs/common": "^11.1.26",
+    "@nestjs/core": "^11.1.26",
     "@nestjs/mapped-types": "^2.1.1",
-    "@nestjs/platform-express": "^11.1.24",
+    "@nestjs/platform-express": "^11.1.26",
     "@nestjs/swagger": "^11.4.4",
     "@prisma/adapter-better-sqlite3": "^7.8.0",
     "@prisma/client": "^7.8.0",
